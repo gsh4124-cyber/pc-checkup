@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>키보드 테스트 | PC CHECKUP</title>
+<meta name="description" content="키보드 키 인식과 동시입력을 온라인에서 확인합니다.">
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
+</head><body>
+<header><div class="wrap nav">
+  <a class="brand" href="index.html">PC <span>CHECKUP</span></a>
+  <nav class="navlinks">
+    <a href="checkup.html">전체 점검</a><a href="keyboard.html">키보드</a><a href="mouse.html">마우스</a>
+    <a href="mic.html">마이크</a><a href="webcam.html">웹캠</a><a href="speaker.html">스피커</a><a href="display.html">모니터</a>
+  </nav>
+</div></header>
+
+<main><section class="tool-head"><div class="wrap"><span class="eyebrow">입력 장치</span><h1>키보드 테스트</h1><p class="section-intro">키를 하나씩 눌러 인식 여부를 확인하고, 여러 키를 동시에 눌러 동시입력도 확인하세요.</p></div></section>
+<div class="wrap tool-layout"><section class="toolbox">
+  <div class="statrow four"><div class="stat"><span>실제 눌림 시작</span><b id="pressCount">0</b></div><div class="stat"><span>OS 자동반복</span><b id="repeatCount">0</b></div><div class="stat"><span>서로 다른 키</span><b id="uniqueCount">0</b></div><div class="stat"><span>최대 동시입력</span><b id="maxSimul">0</b></div></div>
+  <div id="keyboard" class="keyboard"></div><div id="keyLog" class="eventlog">키를 눌러보세요.</div>
+  <div class="controls"><button id="resetKeyboard" class="btn">초기화</button></div>
+</section><aside class="side"><div class="notice"><strong>확인 방법</strong><br>모든 키가 눌릴 때 초록색으로 반응하는지 봅니다. 키를 길게 누르면 운영체제의 정상 자동반복이 별도 집계됩니다. 손을 뗀 뒤에도 입력이 계속되는 현상은 별도로 확인하세요.</div><a class="btn primary" href="checkup.html">전체 점검으로 돌아가기</a></aside></div></main>
+<footer><div class="wrap">브라우저 안에서 바로 점검합니다. 카메라·마이크·키 입력은 서버로 전송하지 않는 구조를 기본으로 합니다.</div></footer></body></html>
