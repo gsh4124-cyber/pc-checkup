@@ -27,12 +27,15 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Inject SEO metadata
-        run: python tools/inject_seo.py
+      - name: Build localized site
+        run: |
+          gzip -dc tools/build_global.py.gz > tools/build_global_runtime.py
+          python tools/build_global_runtime.py
+          rm tools/build_global_runtime.py
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
