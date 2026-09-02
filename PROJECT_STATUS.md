@@ -1,7 +1,7 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
 - 마지막 갱신: 2026-09-02
-- 상태: POC / PUBLIC DEPLOYED / GLOBAL BATCH 1 IMPLEMENTED (DEPLOYMENT PENDING) / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
+- 상태: POC / PUBLIC DEPLOYED / GLOBAL BATCH 1 DEPLOYING / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 
@@ -34,6 +34,7 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 - sitemap 36 URL 자동 생성
 - 언어별 완성 HTML/JS 사본은 저장소에 두지 않고 압축 locale 데이터 `i18n/*.json.gz` + 공통 배포 빌더로 생성
 - 로컬 빌드 및 정적 QA: 내부 참조, 중복 ID, SEO 필수 태그, 비한국어 페이지 한국어 누출, app.js/mobile.js syntax, sitemap URL 수 모두 PASS
+- 현재 GitHub Pages 글로벌 배포 run 트리거 단계
 
 현재 단계에서는 **코드 구현 완료 ≠ 글로벌 배포 성공 ≠ 검색 색인 ≠ 시장 성공**으로 구분한다. 실제 Pages artifact와 공개 URL 검증 전에는 Global Batch 1 배포 완료로 취급하지 않는다.
 
