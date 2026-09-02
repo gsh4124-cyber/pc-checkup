@@ -1,4 +1,4 @@
-name: Deploy PC CHECKUP to GitHub Pages
+name: Deploy DEVICE CHECKUP to GitHub Pages
 
 on:
   push:
