@@ -1,12 +1,13 @@
 # PROJECT STATUS — PC CHECKUP
 
 - 마지막 갱신: 2026-09-02
-- 상태: POC / QA RETEST v3 / DEPLOYMENT BLOCKED_GATE
-- 저장소: `gsh4124-cyber/pc-checkup` (private)
+- 상태: POC / QA RETEST v3 / PUBLIC DEPLOYED / REAL-DEVICE QA PENDING
+- 저장소: `gsh4124-cyber/pc-checkup` (public)
+- 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 - 목적: 한국어 5분 PC·주변기기 전체 점검 허브의 사용가치와 구현 가능성 검증
 - MVP: 키보드 / 마우스 / 마이크 / 웹캠 / 스피커 L-R / 모니터 불량화소 / 전체 점검
 - 차별화 가설: 범용 도구 나열이 아니라 새 장비 구매 직후·중고 거래 전의 ‘한 번에 점검’ 흐름 + 개별 검색 진입 페이지
-- 공개 배포: GitHub Pages 자동 배포 시도했으나 Pages 사이트 최초 활성화 권한 Gate에서 중단
+- 공개 배포: GitHub Pages 배포 성공
 
 ## RETEST v3 변경
 
@@ -21,7 +22,6 @@
 
 - JavaScript syntax: PASS
 - HTML 로컬 파일 참조: PASS / 누락 0
-- 저장소 기준 파일 구성: 14개 + GitHub Pages workflow
 - Chromium 자동 실행(인라인 격리 환경): 8개 화면 렌더 PASS / page error 0
 - 키보드: 1회 입력 → 1회 집계 PASS
 - 마우스: 1회 클릭 → 1회 집계 PASS
@@ -32,23 +32,24 @@
 - 웹캠 장치 없음 한국어 안내 PASS
 - 개인정보/네트워크: 외부 전송 코드 없음. 마이크·웹캠은 `getUserMedia`, 결과는 LocalStorage만 사용
 
-## 환경 한계 / 아직 미완료
+## 배포 결과
 
-- 현재 AI 실행 샌드박스가 localhost와 file URL을 관리자 차단하므로 실제 URL 기반 E2E는 실행 불가
+- `.github/workflows/pages.yml` 사용
+- 최초 run `33618741463`은 private 저장소 상태에서 Pages 최초 활성화 권한 문제로 실패
+- 저장소 public 전환 후 동일 run 재실행(attempt 2): SUCCESS
+- GitHub Pages 환경 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
+- 실제 production URL 기준 `sitemap.xml` 반영 완료
+- `robots.txt`에 production sitemap 위치 반영 완료
+- 이후 SEO 파일 변경 배포 run `33622251135`: SUCCESS
+
+## 아직 미완료
+
 - 실제 물리 키보드·마우스·마이크·웹캠·오디오·모니터 실기기 QA는 사용자 PC에서 최종 확인 필요
 - Chrome/Edge/Firefox/Safari 교차 브라우저 실기기 QA 미완료
 - 모바일/터치 실기기 QA 미완료
-- 실제 도메인 기준 sitemap/canonical/OG/구조화 데이터 미완료
-
-## 배포 시도
-
-- `.github/workflows/pages.yml` 생성
-- GitHub Actions run `33618741463` 실행
-- Checkout: PASS
-- Configure Pages: FAIL
-- 오류: `Resource not accessible by integration` — 연결 앱의 GitHub Pages 최초 활성화 권한 부족
-- 의미: 코드/워크플로 실패가 아니라 저장소 Settings에서 Pages를 최초 1회 활성화해야 하는 계정 설정 Gate
+- HTML canonical / OG / 구조화 데이터는 추가 SEO 정리 대상
+- 독립 Red Team 및 실제 사용·검색 데이터 기반 현실검증 미완료
 
 ## 다음
 
-사용자가 GitHub 저장소 `Settings → Pages`에서 GitHub Pages를 최초 1회 활성화하고 Source를 GitHub Actions로 설정 → workflow 재실행 → 공개 URL 확인 → 실제 PC에서 최종 실기기 QA → 도메인/SEO 메타 정리 → 배포 완료 판정.
+공개 URL에서 사용자 PC 실기기 전체 점검 → 문제 발견 시 수정 → Red Team → 검색 노출/실사용 데이터 회수 → Continue / Hold / Kill 판단.
