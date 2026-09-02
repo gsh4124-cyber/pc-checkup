@@ -74,6 +74,16 @@ function initMouse(){
 
 let media = {micStream:null,micCtx:null,micRaf:null,camStream:null};
 
+function mediaErrorMessage(err, kind){
+  const label=kind==="camera" ? "카메라" : "마이크";
+  if(!err) return `${label}를 사용할 수 없습니다.`;
+  if(err.name==="NotAllowedError" || err.name==="SecurityError") return `${label} 권한이 차단되었습니다. 브라우저 주소창의 권한 설정을 확인하세요.`;
+  if(err.name==="NotFoundError" || err.name==="DevicesNotFoundError") return `사용 가능한 ${label} 장치를 찾지 못했습니다.`;
+  if(err.name==="NotReadableError" || err.name==="TrackStartError") return `${label}가 다른 프로그램에서 사용 중이거나 장치를 열 수 없습니다.`;
+  if(err.name==="OverconstrainedError" || err.name==="ConstraintNotSatisfiedError") return `${label}의 요청 설정을 사용할 수 없습니다. 다른 장치를 선택해보세요.`;
+  return `${label}를 사용할 수 없습니다. (${err.name || "알 수 없는 오류"})`;
+}
+
 async function initMic(){
   const start=$("#startMic"); if(!start) return;
   const stop=$("#stopMic"), canvas=$("#wave"), ctx2=canvas.getContext("2d");
@@ -111,7 +121,7 @@ async function initMic(){
         ctx2.stroke();
         media.micRaf=requestAnimationFrame(draw);
       }; draw();
-    }catch(err){ setText("micStatus",`사용 불가: ${err.name}`); }
+    }catch(err){ setText("micStatus",mediaErrorMessage(err,"mic")); }
   });
 }
 
@@ -135,7 +145,7 @@ async function initCam(){
       const current=track.getSettings().deviceId;
       sel.innerHTML="";
       cams.forEach((d,i)=>{ const o=document.createElement("option");o.value=d.deviceId;o.textContent=d.label||`카메라 ${i+1}`;if(d.deviceId===current)o.selected=true;sel.appendChild(o);});
-    }catch(err){setText("camStatus",`사용 불가: ${err.name}`);}
+    }catch(err){setText("camStatus",mediaErrorMessage(err,"camera"));}
   }
   start.addEventListener("click",()=>startCam(sel.value||undefined));
   $("#stopCam").addEventListener("click",stopCam);
@@ -147,11 +157,27 @@ function initSpeaker(){
   const AC=window.AudioContext||window.webkitAudioContext;
   let ac;
   async function play(pan){
-    if(!ac) ac=new AC();
-    if(ac.state==="suspended") await ac.resume();
-    const osc=ac.createOscillator(), gain=ac.createGain(), panner=ac.createStereoPanner();
-    osc.type="sine";osc.frequency.value=440;gain.gain.value=.12;panner.pan.value=pan;
-    osc.connect(gain).connect(panner).connect(ac.destination);osc.start();osc.stop(ac.currentTime+.8);
+    try{
+      if(!AC) throw new Error("AudioContext unsupported");
+      if(!ac) ac=new AC();
+      if(ac.state==="suspended") await ac.resume();
+      const osc=ac.createOscillator(), gain=ac.createGain();
+      osc.type="sine";osc.frequency.value=440;gain.gain.value=.12;
+      if(typeof ac.createStereoPanner==="function"){
+        const panner=ac.createStereoPanner(); panner.pan.value=pan;
+        osc.connect(gain).connect(panner).connect(ac.destination);
+      }else{
+        const merger=ac.createChannelMerger(2);
+        const left=ac.createGain(), right=ac.createGain();
+        left.gain.value=pan<=0 ? 1 : 0; right.gain.value=pan>=0 ? 1 : 0;
+        gain.connect(left).connect(merger,0,0); gain.connect(right).connect(merger,0,1); merger.connect(ac.destination);
+        osc.connect(gain);
+      }
+      osc.start();osc.stop(ac.currentTime+.8);
+      setText("speakerStatus","테스트 톤 재생됨");
+    }catch(err){
+      setText("speakerStatus","이 브라우저에서는 오디오 테스트를 재생할 수 없습니다. 다른 브라우저에서 다시 시도하세요.");
+    }
   }
   $("#playLeft").addEventListener("click",()=>play(-1));
   $("#playBoth").addEventListener("click",()=>play(0));
@@ -166,7 +192,8 @@ function initDisplay(){
   $$(".screen-color").forEach(b=>b.addEventListener("click",()=>{layer.style.background=b.dataset.color;}));
   const close=()=>{layer.classList.remove("active"); if(document.fullscreenElement) document.exitFullscreen?.();};
   $("#closeScreen").addEventListener("click",close);
-  window.addEventListener("keydown",e=>{if(e.key==="Escape") layer.classList.remove("active");});
+  document.addEventListener("fullscreenchange",()=>{ if(!document.fullscreenElement) layer.classList.remove("active"); });
+  window.addEventListener("keydown",e=>{if(e.key==="Escape" && !document.fullscreenElement) layer.classList.remove("active");});
 }
 
 function initCheckup(){
