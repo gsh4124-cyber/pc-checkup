@@ -88,27 +88,32 @@ async function initMic(){
   const start=$("#startMic"); if(!start) return;
   const stop=$("#stopMic"), canvas=$("#wave"), ctx2=canvas.getContext("2d");
   let analyser, data;
-  function stopMic(){
+  function stopMic(status="정지됨"){
     if(media.micRaf) cancelAnimationFrame(media.micRaf);
     media.micStream?.getTracks().forEach(t=>t.stop());
-    media.micCtx?.close();
+    media.micCtx?.close().catch?.(()=>{});
     media.micStream=media.micCtx=media.micRaf=null;
-    $("#micMeter").style.width="0%"; setText("micStatus","정지됨");
+    $("#micMeter").style.width="0%"; setText("micStatus",status);
   }
-  stop.addEventListener("click",stopMic);
+  stop.addEventListener("click",()=>stopMic());
   start.addEventListener("click", async()=>{
     try{
-      stopMic();
+      stopMic("마이크 시작 중");
       const stream=await navigator.mediaDevices.getUserMedia({audio:true});
       media.micStream=stream;
       const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) throw new Error("AudioContext unsupported");
       const ac=new AC(); media.micCtx=ac;
       const source=ac.createMediaStreamSource(stream);
       analyser=ac.createAnalyser(); analyser.fftSize=1024; source.connect(analyser);
       data=new Uint8Array(analyser.fftSize);
       setText("micStatus","입력 감지 중");
-      const devices=await navigator.mediaDevices.enumerateDevices();
-      setText("micDevice", devices.find(d=>d.kind==="audioinput" && d.deviceId===stream.getAudioTracks()[0].getSettings().deviceId)?.label || stream.getAudioTracks()[0].label || "기본 마이크");
+      try{
+        const devices=await navigator.mediaDevices.enumerateDevices();
+        setText("micDevice", devices.find(d=>d.kind==="audioinput" && d.deviceId===stream.getAudioTracks()[0].getSettings().deviceId)?.label || stream.getAudioTracks()[0].label || "기본 마이크");
+      }catch{
+        setText("micDevice",stream.getAudioTracks()[0].label || "기본 마이크");
+      }
       const draw=()=>{
         analyser.getByteTimeDomainData(data);
         let sum=0; for(const v of data){ const n=(v-128)/128; sum+=n*n; }
@@ -121,34 +126,36 @@ async function initMic(){
         ctx2.stroke();
         media.micRaf=requestAnimationFrame(draw);
       }; draw();
-    }catch(err){ setText("micStatus",mediaErrorMessage(err,"mic")); }
+    }catch(err){ const msg=mediaErrorMessage(err,"mic"); stopMic(msg); }
   });
 }
 
 async function initCam(){
   const start=$("#startCam"); if(!start) return;
   const video=$("#camVideo"), sel=$("#camSelect");
-  async function stopCam(){
-    media.camStream?.getTracks().forEach(t=>t.stop()); media.camStream=null; video.srcObject=null; setText("camStatus","정지됨");
+  async function stopCam(status="정지됨"){
+    media.camStream?.getTracks().forEach(t=>t.stop()); media.camStream=null; video.srcObject=null; setText("camStatus",status);
   }
   async function startCam(deviceId){
     try{
-      await stopCam();
+      await stopCam("카메라 시작 중");
       const constraints={video:deviceId?{deviceId:{exact:deviceId}}:true,audio:false};
       const stream=await navigator.mediaDevices.getUserMedia(constraints); media.camStream=stream; video.srcObject=stream;
       await video.play();
       const track=stream.getVideoTracks()[0], s=track.getSettings();
       setText("camStatus","카메라 정상 입력");
       setText("camResolution",`${s.width||video.videoWidth} × ${s.height||video.videoHeight}`);
-      const devices=await navigator.mediaDevices.enumerateDevices();
-      const cams=devices.filter(d=>d.kind==="videoinput");
-      const current=track.getSettings().deviceId;
-      sel.innerHTML="";
-      cams.forEach((d,i)=>{ const o=document.createElement("option");o.value=d.deviceId;o.textContent=d.label||`카메라 ${i+1}`;if(d.deviceId===current)o.selected=true;sel.appendChild(o);});
-    }catch(err){setText("camStatus",mediaErrorMessage(err,"camera"));}
+      try{
+        const devices=await navigator.mediaDevices.enumerateDevices();
+        const cams=devices.filter(d=>d.kind==="videoinput");
+        const current=track.getSettings().deviceId;
+        sel.innerHTML="";
+        cams.forEach((d,i)=>{ const o=document.createElement("option");o.value=d.deviceId;o.textContent=d.label||`카메라 ${i+1}`;if(d.deviceId===current)o.selected=true;sel.appendChild(o);});
+      }catch{}
+    }catch(err){ const msg=mediaErrorMessage(err,"camera"); await stopCam(msg); }
   }
   start.addEventListener("click",()=>startCam(sel.value||undefined));
-  $("#stopCam").addEventListener("click",stopCam);
+  $("#stopCam").addEventListener("click",()=>stopCam());
   sel.addEventListener("change",()=>startCam(sel.value));
 }
 
@@ -190,7 +197,7 @@ function initDisplay(){
   const open=color=>{ layer.style.background=color;layer.classList.add("active");layer.requestFullscreen?.().catch(()=>{}); };
   $$(".color-btn").forEach((b,i)=>{b.style.background=colors[i%colors.length];b.addEventListener("click",()=>open(b.dataset.color));});
   $$(".screen-color").forEach(b=>b.addEventListener("click",()=>{layer.style.background=b.dataset.color;}));
-  const close=()=>{layer.classList.remove("active"); if(document.fullscreenElement) document.exitFullscreen?.();};
+  const close=()=>{layer.classList.remove("active"); if(document.fullscreenElement) document.exitFullscreen?.().catch?.(()=>{});};
   $("#closeScreen").addEventListener("click",close);
   document.addEventListener("fullscreenchange",()=>{ if(!document.fullscreenElement) layer.classList.remove("active"); });
   window.addEventListener("keydown",e=>{if(e.key==="Escape" && !document.fullscreenElement) layer.classList.remove("active");});
@@ -199,7 +206,15 @@ function initDisplay(){
 function initCheckup(){
   const list=$("#checklist"); if(!list) return;
   const key="pc-checkup-results-v1";
-  const state=JSON.parse(localStorage.getItem(key)||"{}");
+  let state={};
+  try{
+    const parsed=JSON.parse(localStorage.getItem(key)||"{}");
+    if(parsed && typeof parsed==="object" && !Array.isArray(parsed)) state=parsed;
+  }catch{
+    try{localStorage.removeItem(key);}catch{}
+    state={};
+  }
+  const safeStore=()=>{try{localStorage.setItem(key,JSON.stringify(state));}catch{}};
   const steps=["keyboard","mouse","display","speaker","mic","webcam"];
   const pages={keyboard:"keyboard.html",mouse:"mouse.html",display:"display.html",speaker:"speaker.html",mic:"mic.html",webcam:"webcam.html"};
   const update=()=>{
@@ -215,7 +230,7 @@ function initCheckup(){
       nextBtn.disabled=!next;
       nextBtn.dataset.href=next ? pages[next] : "";
     }
-    localStorage.setItem(key,JSON.stringify(state));
+    safeStore();
   };
   $$(".checkitem",list).forEach(item=>{
     const id=item.dataset.id;
@@ -227,7 +242,7 @@ function initCheckup(){
       });
     });
   });
-  $("#resetCheckup").addEventListener("click",()=>{localStorage.removeItem(key);location.reload();});
+  $("#resetCheckup").addEventListener("click",()=>{try{localStorage.removeItem(key);}catch{} location.reload();});
   $("#printCheckup").addEventListener("click",()=>window.print());
   $("#nextCheck")?.addEventListener("click",e=>{ const href=e.currentTarget.dataset.href; if(href) location.href=href; });
   update();
