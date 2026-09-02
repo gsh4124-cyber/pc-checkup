@@ -4,7 +4,7 @@ let camStream=null,micStream=null,audioCtx=null,raf=0,touchMax=0;
 const tests=['touch','display','camera','mic','speaker','motion'];
 const resultKey='device-checkup-mobile-results-v1';
 let results={};
-try{results=JSON.parse(localStorage.getItem(resultKey)||'{}')||{};}catch{results={};}
+try{results=JSON.parse(localStorage.getItem(resultKey)||'{}')||{};if(typeof results!=='object'||Array.isArray(results))results={};}catch{results={};}
 
 const friendly=(e,k)=>{
   const n=e?.name||'';
@@ -14,7 +14,7 @@ const friendly=(e,k)=>{
   return `${k}를 시작하지 못했습니다${n?` (${n})`:''}.`;
 };
 
-function saveResults(){localStorage.setItem(resultKey,JSON.stringify(results));}
+function saveResults(){try{localStorage.setItem(resultKey,JSON.stringify(results));}catch{}}
 function setResult(test,state){
   if(state==='unknown') delete results[test]; else results[test]=state;
   saveResults();renderResults();
@@ -43,7 +43,7 @@ document.querySelectorAll('.mobile-result-actions').forEach(group=>{
     setResult(group.dataset.test,b.dataset.result);
   });
 });
-$('#resetMobileResults').onclick=()=>{results={};localStorage.removeItem(resultKey);renderResults();};
+$('#resetMobileResults').onclick=()=>{results={};try{localStorage.removeItem(resultKey);}catch{}renderResults();};
 renderResults();
 
 const touchLayer=$('#touchTestLayer'),touchGrid=$('#touchGrid');
@@ -51,7 +51,6 @@ let touchCells=[],visited=new Set(),touchAutoTimer=0;
 function buildTouchGrid(){
   clearTimeout(touchAutoTimer);touchAutoTimer=0;
   touchGrid.innerHTML='';visited.clear();touchCells=[];touchMax=0;
-  // 종료 버튼이 덮는 영역은 실제 터치 검사가 불가능하므로 상단 최소 제어영역을 검사 그리드에서 제외한다.
   touchGrid.style.top='58px';
   const cols=8,rows=13,total=cols*rows;
   touchGrid.style.setProperty('--touch-cols',cols);touchGrid.style.setProperty('--touch-rows',rows);
@@ -101,18 +100,17 @@ document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement
 
 let frontCameraOk=false,backCameraOk=false,frontDeviceId='',backDeviceId='';
 function stopCamera(status='카메라 종료'){camStream?.getTracks().forEach(t=>t.stop());camStream=null;$('#camVideo').srcObject=null;$('#camStatus').textContent=status;}
-function cameraIdentityVerified(facing,settings){
+function verifyCameraIdentity(facing,settings){
   const actual=settings.facingMode||'';
   const deviceId=settings.deviceId||'';
   if(facing==='user'){
-    frontDeviceId=deviceId||frontDeviceId;
+    if(deviceId) frontDeviceId=deviceId;
     if(actual==='user') frontCameraOk=true;
-    else if(backDeviceId&&deviceId&&deviceId!==backDeviceId) frontCameraOk=true;
   }else{
-    backDeviceId=deviceId||backDeviceId;
+    if(deviceId) backDeviceId=deviceId;
     if(actual==='environment') backCameraOk=true;
-    else if(frontDeviceId&&deviceId&&deviceId!==frontDeviceId) backCameraOk=true;
   }
+  if(frontDeviceId&&backDeviceId&&frontDeviceId!==backDeviceId){frontCameraOk=true;backCameraOk=true;}
   return actual;
 }
 async function camera(facing){
@@ -121,7 +119,7 @@ async function camera(facing){
     camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing}},audio:false});
     const video=$('#camVideo');video.srcObject=camStream;await video.play().catch(()=>{});
     const s=camStream.getVideoTracks()[0].getSettings();
-    const actual=cameraIdentityVerified(facing,s);
+    const actual=verifyCameraIdentity(facing,s);
     const identityKnown=actual==='user'||actual==='environment'||(frontDeviceId&&backDeviceId&&frontDeviceId!==backDeviceId);
     $('#camStatus').textContent=`카메라 입력 정상${s.width&&s.height?` · ${s.width}×${s.height}`:''}${frontCameraOk&&backCameraOk?' · 서로 다른 전/후면 입력 확인':''}`;
     if(frontCameraOk&&backCameraOk){
