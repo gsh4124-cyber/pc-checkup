@@ -1,7 +1,7 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
 - 마지막 갱신: 2026-09-02
-- 상태: POC / PUBLIC DEPLOYED / GLOBAL BATCH 2 DEPLOYED + ARTIFACT QA PASS / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
+- 상태: POC / PUBLIC DEPLOYED / GLOBAL SEARCH-MARKET BATCH 3 DEPLOYED + ARTIFACT QA PASS / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 
@@ -24,10 +24,11 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 
 ## 글로벌 확장 원칙
 
-언어를 임의로 늘리지 않고 다음 두 축 중 하나라도 강한 시장을 우선한다.
+언어를 임의로 늘리지 않고 다음 축을 함께 본다.
 
 1. 광고·수익가치: 광고시장 규모, 구매력, 광고주 경쟁 등
 2. 제품 수요: keyboard/mouse/mic/webcam/dead-pixel/touch-test 계열 실제 검색·사용수요
+3. 검색생태계: Google뿐 아니라 Baidu, Yandex, Bing, Naver/Daum 등 해당 시장에서 실제 점유율이 높은 검색엔진
 
 같은 언어로 여러 국가를 커버할 수 있으면 국가별 사본보다 언어 단위 URL을 우선한다. 글로벌 배포 성공과 검색 색인·시장 성공은 구분한다.
 
@@ -41,51 +42,71 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 
 ## Global Batch 2 — 광고가치 × 수요 재선정 2026-09-02
 
-외부 시장/경쟁 사이트 데이터를 다시 확인해 다음 7개 언어를 추가했다.
+추가 언어:
+- `de` 독일어
+- `fr` 프랑스어
+- `pt` 포르투갈어
+- `it` 이탈리아어
+- `nl` 네덜란드어
+- `id` 인도네시아어
+- `vi` 베트남어
 
-- `de` 독일어 — 독일의 높은 광고시장 가치 우선
-- `fr` 프랑스어 — 프랑스의 높은 광고시장 가치 우선
-- `pt` 포르투갈어 — 브라질이 기기 테스트 도구 실제 트래픽 상위권이면서 광고시장도 큰 편
-- `it` 이탈리아어 — 높은 유럽 광고시장 가치
-- `nl` 네덜란드어 — 작은 인구 대비 높은 광고·구매력 가치
-- `id` 인도네시아어 — webcam 테스트 계열 실제 트래픽 강함
-- `vi` 베트남어 — mic/webcam 테스트 계열 실제 트래픽 강함
+11개 언어 × 9개 기능 페이지 = 99 URL.
 
-인도는 관련 도구 수요가 매우 크지만 영어 검색이 강해 현재 영어판이 이미 상당 부분 커버하므로 힌디어는 이번 Batch 2에서 우선순위를 낮췄다. 중국어는 광고시장 자체는 크지만 Google 중심의 현재 배포/검색 유통 구조와 별도 검색생태계 검토가 필요해 이번 배치에서 보류했다.
+GitHub Pages run `33647035463` SUCCESS, 실제 artifact `9853199054`에서 HTML 99개 / sitemap 99 URL / 내부 참조 / 중복 ID / hreflang / 언어 선택기 / 신규 JS syntax를 검사해 PASS.
 
-### 현재 언어
+## Global Search-Market Batch 3 — 중국·러시아 2026-09-02
 
-`ko / en / ja / es / de / fr / pt / it / nl / id / vi`
+Google 비중만 보고 시장을 선정하지 않도록 검색생태계 기준을 추가했다.
 
-총 11개 언어 × 9개 기능 페이지 = **99개 indexable URL**.
+### 중국
+- 신규 언어: `zh-CN` 간체 중국어
+- 중국 검색시장은 Baidu가 최대 점유율이고 Bing·Haosou 등도 의미 있는 비중을 가지므로 Google SEO만으로 중국 대응 완료로 보지 않음
+- 중국어 페이지는 축소판이 아니라 기존 9개 실제 기능을 동일하게 제공
+- 동적 상태/오류 메시지까지 중국어 현지화
+- `Baiduspider`를 robots.txt에서 명시적으로 허용
+- 표준 `sitemap.xml`에 중국어 9 URL 포함
+- Baidu Search Resource Platform은 사이트 소유 확인 후 URL/Sitemap 제출을 별도 진행해야 함
 
-### 구현 구조
+### 러시아권
+- 신규 언어: `ru` 러시아어
+- 러시아권 검색 유통은 Yandex를 별도 핵심 검색엔진으로 취급
+- 러시아어 페이지도 기존 9개 실제 기능 동일 제공
+- 동적 상태/오류 메시지까지 러시아어 현지화
+- `Yandex` crawler를 robots.txt에서 명시적으로 허용
+- 표준 `sitemap.xml`에 러시아어 9 URL 포함
+- Yandex 공식 가이드상 Webmaster 등록은 자체 도메인이 필요하므로 현재 `github.io` 하위 경로만으로는 정식 Yandex Webmaster 연결을 완료 상태로 취급하지 않음
 
-- Batch 1 공통 빌더로 `ko/en/ja/es` 생성
-- `tools/expand_batch2.py`가 영어 완성본을 기반으로 Batch 2 언어를 build-time 생성
-- 저장소에는 99개 완성 HTML/JS 사본을 중복 보관하지 않음
-- 모든 11개 언어 페이지에 언어 선택기 제공
-- 모든 페이지에 11개 언어 hreflang + x-default 제공
-- sitemap을 99 URL로 자동 재생성
-- 각 신규 언어 canonical / og:locale / JSON-LD inLanguage를 실제 언어 URL 기준으로 생성
+### 현재 언어 / URL 수
 
-### Batch 2 배포·QA 결과
+`ko / en / ja / es / de / fr / pt / it / nl / id / vi / zh-CN / ru`
 
-- GitHub Pages run `33647035463`: **SUCCESS**
+총 **13개 언어 × 9개 기능 페이지 = 117 indexable URL**.
+
+### Batch 3 배포·QA 결과
+
+- GitHub Pages run `33648724051`: **SUCCESS**
 - Build localized site / Upload artifact / Deploy 전 단계 SUCCESS
-- 실제 Pages artifact `9853199054` 다운로드 후 검사
-- HTML: **99개** 존재 확인
-- sitemap: **99 URL** 확인
-- 내부 href/src 깨짐: 0
-- HTML 중복 ID: 0
-- 모든 11개 언어 페이지 hreflang 11개 + x-default 확인
-- 모든 11개 언어 페이지 언어 선택기 11개 옵션 확인
-- 신규 언어 `de/fr/pt/it/nl/id/vi`의 `app.js` / `mobile.js` syntax PASS
-- 신규 언어 index title / canonical 현지화 확인
+- 실제 Pages artifact `9853839134` 다운로드 후 검사
+- HTML: **117개**
+- sitemap: **117 URL**
+- 중국어 / 러시아어 각 9개 HTML 존재 확인
+- 중국어 / 러시아어 `app.js` / `mobile.js` syntax PASS
+- 중국어 / 러시아어 index / mobile / keyboard의 canonical, `zh-CN`/`ru` hreflang, 언어 선택기 selected 상태 확인
+- robots.txt: 일반 crawler + Baiduspider + Yandex 허용, sitemap 명시
 
-**Global Batch 2는 코드 구현 + GitHub Pages 배포 + 배포 artifact 구조 QA 기준 PASS.**
+**Batch 3은 코드 구현 + GitHub Pages 배포 + artifact 구조 QA 기준 PASS.**
 
-단, 번역 품질은 독일어·프랑스어·포르투갈어를 핵심 설명문까지 우선 현지화했고, 이탈리아어·네덜란드어·인도네시아어·베트남어는 핵심 UI·검색 진입문구 중심의 1차 현지화다. 실제 현지 사용자 반응이나 전문 번역 검수 완료를 의미하지 않는다.
+## 검색엔진/배포 Gate
+
+현재 남은 것은 코드가 아니라 외부 계정·도메인/배포 인프라 Gate다.
+
+- Baidu Search Resource Platform: 로그인 + 사이트 소유확인 + URL/Sitemap 제출 필요
+- Yandex Webmaster: 자체 도메인 필요, 로그인 + 소유확인 + sitemap 등록 필요
+- 중국 본토 안정성: `github.io`를 중국 주력 배포 기반으로 확정하지 않음. 중국 본토에서 안정적인 별도 도메인/호스팅 또는 CDN 경로를 선택한 뒤 실제 접근성을 검증해야 함
+- Bing Webmaster / Google Search Console / Naver / Daum도 제출 성공과 실제 색인·검색 노출을 분리해서 관리
+
+이 Gate가 해결되기 전에는 **중국어·러시아어 제품 배포는 완료**, **Baidu/Yandex 검색유통 등록은 미완료**, **중국 본토 안정적 호스팅은 미완료**로 구분한다.
 
 ## 현재 글로벌 진입 URL
 
@@ -100,6 +121,8 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 - 네덜란드어 `/pc-checkup/nl/`
 - 인도네시아어 `/pc-checkup/id/`
 - 베트남어 `/pc-checkup/vi/`
+- 중국어 간체 `/pc-checkup/zh-CN/`
+- 러시아어 `/pc-checkup/ru/`
 
 ## 아직 미완료
 
@@ -107,10 +130,11 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 - Android 6개 전체 항목 정식 체크리스트 QA
 - iPhone Safari 실기기 QA
 - Chrome / Edge / Firefox / Safari 교차 브라우저 QA
-- Batch 2 현지어 표현의 네이티브 수준 검수
+- 일부 현지어 네이티브 수준 검수
+- Baidu / Yandex / Bing / Google 등 실제 검색 유통 등록·색인 확인
+- 중국 본토 안정적 도메인·호스팅 경로 확정 및 접근성 QA
 - 글로벌 검색 색인·실사용 데이터 기반 현실검증 및 Continue / Hold / Kill 판단
-- Google Search Console / Bing 등 실제 검색 유통 등록·색인 확인은 별도 상태로 관리
 
 ## 다음
 
-PC 실기기 QA와 병렬로 글로벌 검색 유통·색인 준비 → Android 정식 체크 → iPhone/교차브라우저 QA → 국가·언어별 검색유입/사용 데이터 회수 → Continue / Hold / Kill 및 추가 언어 판단.
+검색시장별 외부 Gate 해결과 PC 실기기 QA를 병렬 진행 → Android 정식 체크 → iPhone/교차브라우저 QA → 국가·언어·검색엔진별 검색유입/사용 데이터 회수 → Continue / Hold / Kill 및 추가 시장 판단.
