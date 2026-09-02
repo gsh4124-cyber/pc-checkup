@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://gsh4124-cyber.github.io/pc-checkup/sitemap.xml
