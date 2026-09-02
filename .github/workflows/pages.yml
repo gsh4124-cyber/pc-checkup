@@ -33,6 +33,7 @@ jobs:
           python tools/build_global_runtime.py
           rm tools/build_global_runtime.py
           python tools/expand_batch2.py
+          python tools/append_cn_ru.py
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
