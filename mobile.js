@@ -24,11 +24,13 @@ if(pad){
 }
 
 const layer=$('#mobileScreenLayer');
-document.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>{
-  layer.style.background=b.dataset.screen;
+const setScreenColor=color=>{ layer.style.background=color; };
+document.querySelectorAll('[data-open-screen]').forEach(b=>b.onclick=()=>{
+  setScreenColor(b.dataset.openScreen);
   layer.classList.add('active');
   document.documentElement.requestFullscreen?.().catch(()=>{});
 });
+document.querySelectorAll('[data-set-screen]').forEach(b=>b.onclick=()=>setScreenColor(b.dataset.setScreen));
 $('#closeScreen').onclick=()=>{
   layer.classList.remove('active');
   if(document.fullscreenElement) document.exitFullscreen?.();
