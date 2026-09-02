@@ -1,7 +1,7 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
 - 마지막 갱신: 2026-09-02
-- 상태: POC / PUBLIC DEPLOYED / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
+- 상태: POC / PUBLIC DEPLOYED / RED TEAM PASS WITH FIXES / SEO BASELINE DONE / PC & CROSS-BROWSER QA PENDING
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 - 목적: 새 PC·휴대폰 수령 직후 또는 중고 거래 전, 브라우저에서 약 5분 안에 기본 상태를 빠르게 점검하는 한국어 기기 점검 허브의 사용가치 검증
@@ -54,7 +54,7 @@
 - 외부 전송용 fetch / XMLHttpRequest / WebSocket / sendBeacon 없음
 - 외부 분석·광고·추적 스크립트 없음
 - TODO / FIXME / HACK / WIP 코드 표식 없음
-- Pages workflow는 main push 기준 checkout → configure → artifact upload → deploy 자동 실행
+- Pages workflow는 main push 기준 checkout → configure → SEO inject → artifact upload → deploy 자동 실행
 - 최신 기능 수정 배포 job 전체 단계 SUCCESS
 
 ### Red Team에서 발견 및 수정한 결함
@@ -91,6 +91,20 @@
 
 단, Red Team PASS는 실제 모든 기기·브라우저에서의 물리 QA 완료 또는 시장 성공을 의미하지 않는다.
 
+## SEO baseline — 2026-09-02
+
+- `robots.txt` / `sitemap.xml` production URL 반영 유지
+- 배포 시 `tools/inject_seo.py`가 모든 루트 HTML에 SEO 메타데이터를 정적으로 삽입
+- canonical
+- Open Graph: type / locale / site_name / title / description / url
+- Twitter summary card
+- JSON-LD `WebApplication` 구조화 데이터
+- GitHub Pages workflow의 SEO inject 단계 SUCCESS
+- 실제 배포 artifact에서 `index.html`, `checkup.html`, `mobile.html`, `keyboard.html` canonical / og:url / JSON-LD 존재 확인
+- 개별 URL은 각 HTML 파일의 실제 production URL을 canonical로 사용하고 index는 `/pc-checkup/` 루트를 canonical로 사용
+
+SEO 태그 배포 성공은 실제 색인·검색 노출을 의미하지 않는다. 검색엔진의 크롤링·색인과 유입은 현실 데이터로 별도 확인한다.
+
 ## 실제 사용 확인
 
 - Android 실제 기기에서 공개 URL 접속 및 모바일 UI 확인 수행.
@@ -118,13 +132,12 @@ PC와 모바일 페이지에는 마이크·카메라·오디오·화면 검사 �
 - Android 휴대폰 6개 전체 항목 정식 체크리스트 QA
 - iPhone Safari 실기기 QA
 - Chrome / Edge / Firefox / Safari 교차 브라우저 QA
-- HTML canonical / OG / 구조화 데이터 SEO 정리
 - 실제 검색·사용 데이터 기반 현실검증 및 Continue / Hold / Kill 판단
 
 ## 현재 판단
 
-현재 POC 기능 범위에서 추가 검사 종류를 늘리는 것보다 실기기 QA, SEO 정리, 실제 사용 데이터 회수가 우선이다. 브라우저 기반 제품으로서 자동 판정은 측정 가능한 항목에 한정하고, 사람의 시각·청각·촉각 판단이 필요한 항목은 명확한 통과 기준을 제시하는 구조가 현재 최선이다.
+현재 POC 기능 범위에서 추가 검사 종류를 늘리는 것보다 실기기 QA와 실제 사용 데이터 회수가 우선이다. 브라우저 기반 제품으로서 자동 판정은 측정 가능한 항목에 한정하고, 사람의 시각·청각·촉각 판단이 필요한 항목은 명확한 통과 기준을 제시하는 구조가 현재 최선이다.
 
 ## 다음
 
-Red Team 수정본 배포 확인 → SEO canonical / OG / 구조화 데이터 정리 → PC 실기기 QA → iPhone / 교차 브라우저 QA → 실제 사용·검색 데이터 회수 → Continue / Hold / Kill 판단.
+PC 실기기 QA → Android 6개 정식 체크 → iPhone / 교차 브라우저 QA → 검색 노출·실사용 데이터 회수 → Continue / Hold / Kill 판단.
