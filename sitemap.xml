@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://example.com/</loc></url>
-  <url><loc>https://example.com/checkup.html</loc></url>
-  <url><loc>https://example.com/keyboard.html</loc></url>
-  <url><loc>https://example.com/mouse.html</loc></url>
-  <url><loc>https://example.com/mic.html</loc></url>
-  <url><loc>https://example.com/webcam.html</loc></url>
-  <url><loc>https://example.com/speaker.html</loc></url>
-  <url><loc>https://example.com/display.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/checkup.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/keyboard.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/mouse.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/mic.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/webcam.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/speaker.html</loc></url>
+  <url><loc>https://gsh4124-cyber.github.io/pc-checkup/display.html</loc></url>
 </urlset>
