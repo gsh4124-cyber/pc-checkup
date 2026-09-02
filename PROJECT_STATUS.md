@@ -1,7 +1,7 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
 - 마지막 갱신: 2026-09-02
-- 상태: POC / PUBLIC DEPLOYED / GLOBAL BATCH 1 DEPLOYING / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
+- 상태: POC / PUBLIC DEPLOYED / GLOBAL BATCH 1 DEPLOYED + ARTIFACT QA PASS / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 
@@ -24,23 +24,42 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 
 ## 글로벌 확장 Batch 1 — 2026-09-02
 
-- 한국어 본체 기능을 축소하지 않고 동일한 9개 기능 URL 구조를 언어별로 생성하는 build-time localization 구현
 - 언어: `ko / en / ja / es`
-- 각 언어: index + PC 전체점검 + 휴대폰 전체점검 + 키보드 + 마우스 + 마이크 + 웹캠 + 스피커 + 모니터 = 9개 URL
-- 총 indexable URL: 36개
+- 한국어 본체를 축소하지 않고 같은 9개 실제 기능 페이지를 언어별로 제공
+- 각 언어: index + PC 전체점검 + 휴대폰 전체점검 + 키보드 + 마우스 + 마이크 + 웹캠 + 스피커 + 모니터
+- 총 indexable URL: **36개**
 - 본문·버튼·동적 오류/상태 메시지 현지화
 - 모든 페이지 언어 선택기
-- canonical / hreflang / x-default / Open Graph / Twitter / JSON-LD를 언어별 실제 URL 기준으로 정적 생성
+- canonical / hreflang / x-default / Open Graph / Twitter / JSON-LD를 언어별 실제 URL 기준으로 build-time 정적 생성
 - sitemap 36 URL 자동 생성
-- 언어별 완성 HTML/JS 사본은 저장소에 두지 않고 압축 locale 데이터 `i18n/*.json.gz` + 공통 배포 빌더로 생성
-- 로컬 빌드 및 정적 QA: 내부 참조, 중복 ID, SEO 필수 태그, 비한국어 페이지 한국어 누출, app.js/mobile.js syntax, sitemap URL 수 모두 PASS
-- 현재 GitHub Pages 글로벌 배포 run 트리거 단계
+- 언어별 완성 HTML/JS 사본은 저장소에 중복 보관하지 않고 압축 locale `i18n/*.json.gz` + 공통 배포 빌더 `tools/build_global.py.gz`로 생성
+- 기존 `tools/inject_seo.py`와 중간 localization registry는 제거하여 죽은/중복 구현을 남기지 않음
 
-현재 단계에서는 **코드 구현 완료 ≠ 글로벌 배포 성공 ≠ 검색 색인 ≠ 시장 성공**으로 구분한다. 실제 Pages artifact와 공개 URL 검증 전에는 Global Batch 1 배포 완료로 취급하지 않는다.
+### 배포·QA 결과
+
+- GitHub Pages Global Batch 1 run `33644620034`: SUCCESS
+- 후속 상태 갱신 run `33644673745`: SUCCESS
+- 실제 Pages 배포 artifact 다운로드 후 검사
+- HTML: 36개 존재 확인
+- sitemap: 36 URL / 중복 0
+- 내부 href/src 누락 0
+- HTML 중복 ID 0
+- `app.js` / `mobile.js` 4개 언어 syntax PASS
+- 영어·일본어·스페인어 HTML/JS 한국어 누출 0 (`한국어` 언어 선택 옵션 표기만 예외)
+- 모든 페이지 canonical / `ko,en,ja,es` hreflang / x-default / 언어 선택기 존재 확인
+- 샘플 title 현지화 확인: 영어·일본어·스페인어 index 및 개별 검사 페이지
+
+**Global Batch 1은 코드 구현과 Pages 배포 artifact 기준 PASS.** 검색엔진 색인·검색 노출·글로벌 시장 성공은 아직 검증되지 않았다.
+
+## 현재 글로벌 URL
+
+- 한국어: `https://gsh4124-cyber.github.io/pc-checkup/`
+- 영어: `https://gsh4124-cyber.github.io/pc-checkup/en/`
+- 일본어: `https://gsh4124-cyber.github.io/pc-checkup/ja/`
+- 스페인어: `https://gsh4124-cyber.github.io/pc-checkup/es/`
 
 ## 아직 미완료
 
-- Global Batch 1 실제 Pages 배포 및 다국어 배포 artifact QA
 - 실제 PC 물리 장비 정식 QA
 - Android 6개 전체 항목 정식 체크리스트 QA
 - iPhone Safari 실기기 QA
@@ -49,4 +68,4 @@ PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹�
 
 ## 다음
 
-Global Batch 1 Pages 배포·artifact QA → 공개 en/ja/es URL 확인 → PC 실기기 QA → Android 정식 체크 → iPhone/교차브라우저 QA → 글로벌 색인·실사용 데이터 회수.
+PC 실기기 QA → Android 정식 체크 → iPhone/교차브라우저 QA → 글로벌 검색 색인·실사용 데이터 회수 → 필요 시 Global Batch 2 언어 확장.
