@@ -1,0 +1,58 @@
+from pathlib import Path
+import re
+
+ROOT = Path('dist')
+LOCALES = ['ko','en','ja','es','de','fr','pt','it','nl','id','vi','zh-CN','ru']
+LABELS = {
+    'ko':'한국어','en':'English','ja':'日本語','es':'Español','de':'Deutsch','fr':'Français',
+    'pt':'Português','it':'Italiano','nl':'Nederlands','id':'Bahasa Indonesia','vi':'Tiếng Việt',
+    'zh-CN':'简体中文','ru':'Русский'
+}
+
+STYLE = '''\n<style>\n/* language-ux-v1 */\n.language-picker{margin-left:auto;display:flex;align-items:center}\n.language-picker select{max-width:156px;border:1px solid var(--line);background:#121c28;color:var(--text);border-radius:10px;padding:8px 30px 8px 10px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}\n@media(max-width:760px){.language-picker{order:3;width:100%;margin:8px 0 0}.language-picker select{width:100%;max-width:none}}\n</style>\n'''
+
+SCRIPT = '''\n<script>\n/* language-ux-v1 */\n(()=>{\n  const supported=['ko','en','ja','es','de','fr','pt','it','nl','id','vi','zh-CN','ru'];\n  const key='device-checkup-language-v1';\n  const normalize=raw=>{\n    const v=String(raw||'').replace('_','-').toLowerCase();\n    if(v.startsWith('zh'))return 'zh-CN';\n    const base=v.split('-')[0];\n    return supported.find(x=>x.toLowerCase()===v)||supported.find(x=>x.toLowerCase()===base)||'';\n  };\n  const saved=(()=>{try{return normalize(localStorage.getItem(key))}catch{return ''}})();\n  const detected=()=>{\n    const langs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language]);\n    for(const lang of langs){const hit=normalize(lang);if(hit)return hit}\n    return 'en';\n  };\n  document.addEventListener('DOMContentLoaded',()=>{\n    const picker=document.getElementById('languagePicker');\n    picker?.addEventListener('change',()=>{\n      try{localStorage.setItem(key,picker.value)}catch{}\n      const option=picker.options[picker.selectedIndex];\n      if(option?.dataset.href)location.href=option.dataset.href;\n    });\n  });\n  const current=document.documentElement.dataset.locale||document.documentElement.lang||'ko';\n  const isRootLocale=current.toLowerCase()==='ko';\n  if(isRootLocale){\n    const wanted=saved||detected();\n    if(wanted&&wanted!=='ko'){\n      const target=document.querySelector(`#languagePicker option[value="${CSS.escape(wanted)}"]`)?.dataset.href;\n      if(target)location.replace(target);\n    }\n  }\n})();\n</script>\n'''
+
+
+def locale_for(path: Path) -> str:
+    rel = path.relative_to(ROOT)
+    if len(rel.parts) == 1:
+        return 'ko'
+    return rel.parts[0] if rel.parts[0] in LOCALES else 'ko'
+
+
+def href_for(current_locale: str, target_locale: str, filename: str) -> str:
+    if current_locale == 'ko':
+        return filename if target_locale == 'ko' else f'{target_locale}/{filename}'
+    return f'../{filename}' if target_locale == 'ko' else f'../{target_locale}/{filename}'
+
+
+def inject(path: Path):
+    text = path.read_text(encoding='utf-8')
+    text = re.sub(r'\n<style>\n/\* language-ux-v[0-9]+ \*/[\s\S]*?</style>\n(?=</head>)', '\n', text, count=1)
+    text = re.sub(r'\n<script>\n/\* language-ux-v[0-9]+ \*/[\s\S]*?</script>\n(?=</body>)', '\n', text, count=1)
+    text = re.sub(r'<div class="language-picker">[\s\S]*?</div>', '', text, count=1)
+
+    locale = locale_for(path)
+    filename = path.name
+    options=[]
+    for code in LOCALES:
+        selected=' selected' if code==locale else ''
+        href=href_for(locale, code, filename)
+        options.append(f'<option value="{code}" data-href="{href}"{selected}>{LABELS[code]}</option>')
+    picker='<div class="language-picker"><select id="languagePicker" aria-label="Language">'+''.join(options)+'</select></div>'
+
+    # Mark the actual locale explicitly for the routing script.
+    text = re.sub(r'<html([^>]*)>', lambda m: '<html'+re.sub(r'\sdata-locale="[^"]*"','',m.group(1))+f' data-locale="{locale}">', text, count=1)
+    if '<div class="wrap nav">' not in text:
+        raise RuntimeError(f'Navigation anchor missing: {path}')
+    text = text.replace('<div class="wrap nav">', '<div class="wrap nav">'+picker, 1)
+    text = text.replace('</head>', STYLE+'</head>', 1)
+    text = text.replace('</body>', SCRIPT+'</body>', 1)
+    path.write_text(text, encoding='utf-8')
+
+
+paths = sorted(ROOT.rglob('*.html'))
+for path in paths:
+    inject(path)
+print(f'Injected browser-language routing and manual language selector into {len(paths)} HTML pages')
