@@ -1,7 +1,7 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
 - 마지막 갱신: 2026-09-03
-- 상태: **POC / PUBLIC DEPLOYED / GLOBAL 13-LANGUAGE DEPLOYED / AUTOMATED ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / PHYSICAL PC & CROSS-BROWSER QA PENDING**
+- 상태: **POC / PUBLIC DEPLOYED / GLOBAL 13-LANGUAGE DEPLOYED / AUTOMATED ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / PRODUCTION BROWSER QA PASS / PHYSICAL PC & CROSS-BROWSER QA PENDING**
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 
@@ -118,6 +118,36 @@ PC 6종:
 
 상세 기록: `QA_AUDIT_2026-09-03.md`
 
+## 2026-09-03 공개 Production Browser QA
+
+정적 산출물 PASS와 실제 공개 GitHub Pages PASS를 분리하기 위해 별도 `Production Browser Smoke` workflow를 추가했다. `push / workflow_dispatch / 6시간 주기`로 공개 URL을 직접 검사한다.
+
+첫 공개 검증 과정에서 실제 언어 선택기가 2개 생성되는 회귀를 발견했다.
+
+확인된 원인:
+- 최신 canonical 선택기 `#languagePicker`
+- 오래된 글로벌 빌드 단계가 남기던 `.lang-switch`
+
+두 경로가 동시에 공개 산출물에 존재했다. 숨김 처리 대신 빌드 단계에서 구형 `.lang-switch`를 물리적으로 제거하도록 수정했다.
+
+재발 방지:
+- `d1ec3263536e01fe23f4392095ba68f63a5c28a3` — 글로벌 빌드에서 legacy duplicate selector 실제 삭제
+- `22e2140c554d431add5a7918188bfe14b6ce8086` — 공개 QA를 browser locale-aware로 만들고 selector 중복·잘못된 locale redirect를 직접 검증
+- Production Browser Smoke run `33750417854`: **SUCCESS**
+
+현재 공개 QA가 확인하는 범위:
+- sitemap 117 URL 실제 접근
+- 대표 `ko / en / ja / zh-CN / ru` 모바일 공개 화면
+- 대표 영어·중국어·러시아어 기능 페이지
+- `#languagePicker` 정확히 1개
+- retired `.lang-switch` 0개
+- 헤더 language select 1개
+- pageerror 없음
+- 대표 홈 모바일 horizontal overflow 없음
+- 예상하지 않은 외부 네트워크 origin 없음
+
+이 PASS는 실제 키보드·마우스·스피커·마이크·웹캠 등 물리 하드웨어와 Safari/Firefox 등 전체 교차브라우저 PASS를 대신하지 않는다.
+
 ## 광고 준비 상태
 
 실제 광고 네트워크 코드는 아직 연결하지 않았다.
@@ -181,6 +211,7 @@ PC:
 - 배포: PASS
 - 정적/Artifact QA: **PASS WITH FIXES**
 - Red Team: PASS WITH FIXES
+- 공개 Production Browser QA: **PASS WITH FIXES**
 - 광고 슬롯 준비: PASS (실광고 미연결)
 - PC 물리 QA: PENDING
 - 교차브라우저 QA: PENDING
