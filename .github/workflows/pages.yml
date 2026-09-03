@@ -34,12 +34,13 @@ jobs:
             tools/append_cn_ru.py \
             tools/normalize_generated_keyboard.py \
             tools/inject_language_ux.py \
+            tools/localize_korean_ui.py \
             tools/validate_dist.py
 
       - name: Check required source files
         run: |
           set -e
-          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_keyboard.py tools/inject_language_ux.py tools/validate_dist.py; do
+          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_keyboard.py tools/inject_language_ux.py tools/localize_korean_ui.py tools/validate_dist.py; do
             test -s "$file"
           done
 
@@ -64,6 +65,7 @@ jobs:
           python tools/append_cn_ru.py
           python tools/normalize_generated_keyboard.py
           python tools/inject_language_ux.py
+          python tools/localize_korean_ui.py
 
       - name: Validate localized artifact
         run: python tools/validate_dist.py
@@ -79,7 +81,10 @@ jobs:
               assert 'id="languagePicker"' in t, p
               assert 'language-ux-v1' in t, p
               assert 'data-locale=' in t, p
-          print('Language UX present on all 117 pages')
+          ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
+          for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
+              assert phrase not in ko, phrase
+          print('Language UX present on all 117 pages and Korean keyboard prose is localized')
           PY
 
       - name: Upload Pages artifact
