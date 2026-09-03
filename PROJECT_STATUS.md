@@ -1,140 +1,189 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
-- 마지막 갱신: 2026-09-02
-- 상태: POC / PUBLIC DEPLOYED / GLOBAL SEARCH-MARKET BATCH 3 DEPLOYED + ARTIFACT QA PASS / RED TEAM PASS WITH FIXES / PC & CROSS-BROWSER QA PENDING
+- 마지막 갱신: 2026-09-03
+- 상태: **POC / PUBLIC DEPLOYED / GLOBAL 13-LANGUAGE DEPLOYED / AUTOMATED ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / PHYSICAL PC & CROSS-BROWSER QA PENDING**
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 
 ## 제품 범위
 
-PC 6종: 키보드, 마우스, 모니터, 스피커·헤드폰, 마이크, 웹캠 + 5분 전체점검.
+PC 6종:
+- 키보드
+- 마우스
+- 모니터
+- 스피커·헤드폰
+- 마이크
+- 웹캠
+- 5분 전체점검
 
-휴대폰 6종: 전체화면 터치·멀티터치, 화면 색상·불량화소, 전·후면 카메라, 마이크, 스피커, 진동·화면회전 + 결과/진행률 저장.
+휴대폰 6종:
+- 터치·멀티터치
+- 화면 색상·불량화소
+- 전·후면 카메라
+- 마이크
+- 스피커
+- 진동·화면회전
+- 결과/진행률 저장
 
-브라우저가 실제 측정할 수 있는 항목만 자동 판정하며, 화면 결함·실제 청취·진동 체감·카메라 화질 등 사람의 감각이 필요한 항목은 통과 기준과 수동 판정을 유지한다.
+원칙:
+- 브라우저가 신뢰성 있게 측정 가능한 신호만 자동 판정한다.
+- 화면 결함, 실제 청취, 진동 체감, 카메라 화질 등 사람의 감각이 필요한 항목은 수동 판정을 유지한다.
+- 권한 거부·브라우저 미지원만으로 하드웨어 고장 판정을 하지 않는다.
 
-## 기존 검증
+## 현재 배포
 
-- GitHub Pages 공개 배포 완료
-- 정적·자동 QA PASS
-- Android 실제 공개 URL 탐색 QA 수행
-- Red Team: **PASS WITH FIXES**
-- Red Team에서 터치 100% 영역, 카메라 거짓 정상 가능성, LocalStorage 손상/차단, 미디어 자원 정리 엣지케이스를 발견해 수정
-- 외부 전송용 fetch / XMLHttpRequest / WebSocket / sendBeacon 및 외부 분석·추적 스크립트 없음
-
-## 글로벌 확장 원칙
-
-언어를 임의로 늘리지 않고 다음 축을 함께 본다.
-
-1. 광고·수익가치: 광고시장 규모, 구매력, 광고주 경쟁 등
-2. 제품 수요: keyboard/mouse/mic/webcam/dead-pixel/touch-test 계열 실제 검색·사용수요
-3. 검색생태계: Google뿐 아니라 Baidu, Yandex, Bing, Naver/Daum 등 해당 시장에서 실제 점유율이 높은 검색엔진
-
-같은 언어로 여러 국가를 커버할 수 있으면 국가별 사본보다 언어 단위 URL을 우선한다. 글로벌 배포 성공과 검색 색인·시장 성공은 구분한다.
-
-## Global Batch 1 — 2026-09-02
-
-- 언어: `ko / en / ja / es`
-- 4개 언어 × 9개 실제 기능 페이지 = 36 URL
-- 한국어 본체 기능 축소 없이 동일 기능 제공
-- canonical / hreflang / x-default / Open Graph / Twitter / JSON-LD / 언어 선택기 / sitemap 적용
-- 실제 Pages artifact QA PASS
-
-## Global Batch 2 — 광고가치 × 수요 재선정 2026-09-02
-
-추가 언어:
-- `de` 독일어
-- `fr` 프랑스어
-- `pt` 포르투갈어
-- `it` 이탈리아어
-- `nl` 네덜란드어
-- `id` 인도네시아어
-- `vi` 베트남어
-
-11개 언어 × 9개 기능 페이지 = 99 URL.
-
-GitHub Pages run `33647035463` SUCCESS, 실제 artifact `9853199054`에서 HTML 99개 / sitemap 99 URL / 내부 참조 / 중복 ID / hreflang / 언어 선택기 / 신규 JS syntax를 검사해 PASS.
-
-## Global Search-Market Batch 3 — 중국·러시아 2026-09-02
-
-Google 비중만 보고 시장을 선정하지 않도록 검색생태계 기준을 추가했다.
-
-### 중국
-- 신규 언어: `zh-CN` 간체 중국어
-- 중국 검색시장은 Baidu가 최대 점유율이고 Bing·Haosou 등도 의미 있는 비중을 가지므로 Google SEO만으로 중국 대응 완료로 보지 않음
-- 중국어 페이지는 축소판이 아니라 기존 9개 실제 기능을 동일하게 제공
-- 동적 상태/오류 메시지까지 중국어 현지화
-- `Baiduspider`를 robots.txt에서 명시적으로 허용
-- 표준 `sitemap.xml`에 중국어 9 URL 포함
-- Baidu Search Resource Platform은 사이트 소유 확인 후 URL/Sitemap 제출을 별도 진행해야 함
-
-### 러시아권
-- 신규 언어: `ru` 러시아어
-- 러시아권 검색 유통은 Yandex를 별도 핵심 검색엔진으로 취급
-- 러시아어 페이지도 기존 9개 실제 기능 동일 제공
-- 동적 상태/오류 메시지까지 러시아어 현지화
-- `Yandex` crawler를 robots.txt에서 명시적으로 허용
-- 표준 `sitemap.xml`에 러시아어 9 URL 포함
-- Yandex 공식 가이드상 Webmaster 등록은 자체 도메인이 필요하므로 현재 `github.io` 하위 경로만으로는 정식 Yandex Webmaster 연결을 완료 상태로 취급하지 않음
-
-### 현재 언어 / URL 수
-
+지원 언어:
 `ko / en / ja / es / de / fr / pt / it / nl / id / vi / zh-CN / ru`
 
 총 **13개 언어 × 9개 기능 페이지 = 117 indexable URL**.
 
-### Batch 3 배포·QA 결과
+검색 기본 구조:
+- canonical
+- hreflang
+- x-default
+- Open Graph / Twitter
+- JSON-LD WebApplication
+- sitemap.xml
+- robots.txt
+- Baiduspider / Yandex crawler 허용
 
-- GitHub Pages run `33648724051`: **SUCCESS**
-- Build localized site / Upload artifact / Deploy 전 단계 SUCCESS
-- 실제 Pages artifact `9853839134` 다운로드 후 검사
-- HTML: **117개**
-- sitemap: **117 URL**
-- 중국어 / 러시아어 각 9개 HTML 존재 확인
-- 중국어 / 러시아어 `app.js` / `mobile.js` syntax PASS
-- 중국어 / 러시아어 index / mobile / keyboard의 canonical, `zh-CN`/`ru` hreflang, 언어 선택기 selected 상태 확인
-- robots.txt: 일반 crawler + Baiduspider + Yandex 허용, sitemap 명시
+외부 Gate:
+- Baidu Search Resource Platform 소유확인/제출
+- Yandex Webmaster 자체도메인/소유확인/제출
+- 중국 본토 안정적 도메인·호스팅 경로
+- Google/Bing/Naver/Daum 등 실제 등록·색인·노출 검증
 
-**Batch 3은 코드 구현 + GitHub Pages 배포 + artifact 구조 QA 기준 PASS.**
+## 2026-09-03 키보드 회귀 복구
 
-## 검색엔진/배포 Gate
+최근 키보드 수정 중 Shift / Fn / fullscreen / Keyboard Lock 회귀가 반복되어 이전 실제 작동 구현과 최신 구현을 비교해 입력 판별 구조를 복원했다.
 
-현재 남은 것은 코드가 아니라 외부 계정·도메인/배포 인프라 Gate다.
+현재 구조:
+- Shift / Ctrl / Alt / Meta modifier 판별을 공통 규칙으로 통일
+- 우선순위: `event.code` → `event.location` → 최소 fallback
+- `ShiftUnknown`, 화면에서 Shift 선선택, 구형 `initKeyboard()` 경로 제거
+- Fn은 자동 추론만 사용하지 않고 명시적 `Fn check` + `fnArmed` 상태 복원
+- Fn check ON에서 Home / End / PageUp / PageDown / Insert / Delete 보조출력을 별도 확인
+- fullscreen 검사 유지
+- Keyboard Lock은 검사 흐름 방해 키를 선택적으로 차단
+- Windows 시작키 대응을 위해 `MetaLeft / MetaRight`도 fullscreen lock 대상에 포함
+- stuck-key 안전 해제 유지
 
-- Baidu Search Resource Platform: 로그인 + 사이트 소유확인 + URL/Sitemap 제출 필요
-- Yandex Webmaster: 자체 도메인 필요, 로그인 + 소유확인 + sitemap 등록 필요
-- 중국 본토 안정성: `github.io`를 중국 주력 배포 기반으로 확정하지 않음. 중국 본토에서 안정적인 별도 도메인/호스팅 또는 CDN 경로를 선택한 뒤 실제 접근성을 검증해야 함
-- Bing Webmaster / Google Search Console / Naver / Daum도 제출 성공과 실제 색인·검색 노출을 분리해서 관리
+실제 Left/Right Shift 최종 물리 QA는 다른 PC에서 재확인 예정.
 
-이 Gate가 해결되기 전에는 **중국어·러시아어 제품 배포는 완료**, **Baidu/Yandex 검색유통 등록은 미완료**, **중국 본토 안정적 호스팅은 미완료**로 구분한다.
+## 2026-09-03 전수 artifact QA
 
-## 현재 글로벌 진입 URL
+실제 GitHub Pages artifact를 다운로드해 독립 검사했다.
 
-- 한국어 `/pc-checkup/`
-- 영어 `/pc-checkup/en/`
-- 일본어 `/pc-checkup/ja/`
-- 스페인어 `/pc-checkup/es/`
-- 독일어 `/pc-checkup/de/`
-- 프랑스어 `/pc-checkup/fr/`
-- 포르투갈어 `/pc-checkup/pt/`
-- 이탈리아어 `/pc-checkup/it/`
-- 네덜란드어 `/pc-checkup/nl/`
-- 인도네시아어 `/pc-checkup/id/`
-- 베트남어 `/pc-checkup/vi/`
-- 중국어 간체 `/pc-checkup/zh-CN/`
-- 러시아어 `/pc-checkup/ru/`
+검증 기준 run:
+- run 83: `33728647123`
+- head: `16fcae97c387b1457102c19e4403088892c31be7`
+- artifact: `9882948962`
 
-## 아직 미완료
+결과:
+- HTML 117개 PASS
+- sitemap 117 URL PASS
+- 13개 언어 × 9페이지 존재 PASS
+- 내부 href/src 누락 0
+- duplicate id 0
+- canonical 누락 0
+- x-default hreflang 누락 0
+- 비한국어 raw Korean leakage 0 (언어선택기의 `한국어` 제외)
+- 모든 locale `app.js / mobile.js` syntax PASS
+- 모든 inline JavaScript syntax PASS
+- 키보드 구조 invariant 전 언어 PASS
+- 외부 전송용 `fetch / XMLHttpRequest / WebSocket / sendBeacon` 없음
+- Google Analytics / Tag Manager 없음
+- 실제 광고 provider script 없음
 
-- 실제 PC 물리 장비 정식 QA
-- Android 6개 전체 항목 정식 체크리스트 QA
-- iPhone Safari 실기기 QA
-- Chrome / Edge / Firefox / Safari 교차 브라우저 QA
-- 일부 현지어 네이티브 수준 검수
-- Baidu / Yandex / Bing / Google 등 실제 검색 유통 등록·색인 확인
-- 중국 본토 안정적 도메인·호스팅 경로 확정 및 접근성 QA
-- 글로벌 검색 색인·실사용 데이터 기반 현실검증 및 Continue / Hold / Kill 판단
+### 전수검사에서 발견한 실제 회귀 — 수정 완료
 
-## 다음
+글로벌 번역기가 HTML 전체에 단순 문자열 치환을 적용하면서 UI 문구뿐 아니라 인라인 JS와 DOM 구조까지 번역하는 문제가 발견됐다.
 
-검색시장별 외부 Gate 해결과 PC 실기기 QA를 병렬 진행 → Android 정식 체크 → iPhone/교차브라우저 QA → 국가·언어·검색엔진별 검색유입/사용 데이터 회수 → Continue / Hold / Kill 및 추가 시장 판단.
+실제 위험:
+- `fitKeyboard` 함수명 변형
+- `startKeyboard / exitKeyboard / resetKeyboard` DOM id 변형
+- `ShiftLeft / ShiftRight / MetaLeft / MetaRight / ArrowLeft / ArrowRight` 같은 브라우저 표준 키 코드 변형
+- 베트남어에서는 변형된 함수명에 공백이 생겨 실제 JS syntax error 발생
+
+수정:
+- `tools/normalize_generated_keyboard.py`
+  - 모든 언어 생성 완료 후 영어 키보드 동작 JS를 canonical 구조 원본으로 복원
+  - DOM 구조 id canonical 유지
+- `tools/validate_dist.py`
+  - 배포 전 117 HTML 전체 구조/SEO/참조/JS syntax/키보드 invariant/광고슬롯 검증
+- Pages workflow에 `Validate localized artifact` 단계를 추가
+  - 검증 실패 시 Upload/Deploy 차단
+
+최신 run 84 (`33728981384`)도 **SUCCESS**.
+
+상세 기록: `QA_AUDIT_2026-09-03.md`
+
+## 광고 준비 상태
+
+실제 광고 네트워크 코드는 아직 연결하지 않았다.
+
+예약 광고 슬롯만 배치:
+- 랜딩 `index.html`: 1곳
+- PC 전체점검 `checkup.html`: 1곳
+- 모바일 전체점검 `mobile.html`: 1곳
+
+원칙:
+- 개별 기능 검사 페이지에는 광고 슬롯을 넣지 않음
+- fullscreen 검사 중 광고 없음
+- 실제 광고 provider 연결 전까지 inert placeholder 상태
+
+현재 artifact 기준 13개 언어 모두 위 3개 페이지에 슬롯 1개씩 존재함.
+
+## 기존 기능 검토 결과
+
+PC:
+- 마우스: 좌/우/중앙/휠, 초고속 반복입력 후보 보조표시
+- 마이크: 권한 처리, meter/waveform, stop/unload 자원정리
+- 웹캠: 영상/해상도/장치선택, 자원정리
+- 스피커: 좌/우/양쪽 tone, 실제 청취 수동 판정
+- 모니터: 단색 fullscreen, 시각 수동 판정
+- 전체점검: safe LocalStorage, 진행률, reset, print/PDF
+
+모바일:
+- 터치: 8×13 검사영역, 100% 자동종료, 멀티터치 포함 시 자동 정상
+- 카메라: 실제 전/후면 구분 근거 있을 때만 자동 정상
+- 마이크: 실제 입력 threshold 기반 자동 정상
+- 스피커/화면: 수동 판정
+- 회전 자동감지, 진동 미지원은 고장 판정하지 않음
+- pagehide 자원정리
+
+## 아직 미완료 — 실제 물리/현실 QA
+
+자동/정적 QA PASS와 실제 하드웨어 PASS를 구분한다.
+
+필수 남은 QA:
+- 다른 PC에서 Left Shift / Right Shift 실제 분리 확인
+- Left/Right Ctrl, Alt 재확인
+- fullscreen에서 Windows 시작키 차단 실제 확인
+- Fn check ON/OFF 실제 노트북 보조키 확인
+- F1~F12 / Esc / 방향키 / Home-End 계열 browser interference 확인
+- focus loss 후 stuck key 없음 확인
+- 마우스 실제 1클릭=1카운트 확인
+- 스피커 실제 좌/우 청취
+- 마이크 실제 입력
+- 웹캠 실제 영상/장치선택
+- 모니터 실제 시각검사
+- Android 정식 6/6
+- iPhone Safari
+- Chrome / Edge / Firefox / Safari cross-browser
+- 현지어 네이티브 수준 검수
+- 실제 검색 색인·유입·사용 데이터
+
+## 현재 판정
+
+- 구현: PASS
+- 글로벌 빌드: PASS
+- 배포: PASS
+- 정적/Artifact QA: **PASS WITH FIXES**
+- Red Team: PASS WITH FIXES
+- 광고 슬롯 준비: PASS (실광고 미연결)
+- PC 물리 QA: PENDING
+- 교차브라우저 QA: PENDING
+- 검색/시장 현실검증: PENDING
+
+다음 Gate는 **실제 PC 물리 QA + 교차브라우저 QA**다. 이후 광고 provider 연결/AdSense Gate, 검색유통, 실제 사용·시장 데이터를 분리해 진행한다.
