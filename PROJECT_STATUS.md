@@ -1,7 +1,7 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
 - 마지막 갱신: 2026-09-03
-- 상태: **POC / PUBLIC DEPLOYED / GLOBAL 13-LANGUAGE DEPLOYED / AUTOMATED ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / PRODUCTION BROWSER QA PASS / PHYSICAL PC & CROSS-BROWSER QA PENDING**
+- 상태: **POC / PUBLIC DEPLOYED / GLOBAL 13-LANGUAGE DEPLOYED / AUTOMATED ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / EXACT-REVISION MULTI-ENGINE PRODUCTION QA PASS / PHYSICAL DEVICE & REAL-BROWSER QA PENDING**
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
 
@@ -49,7 +49,7 @@ PC 6종:
 
 외부 Gate:
 - Baidu Search Resource Platform 소유확인/제출
-- Yandex Webmaster 자체도메인/소유확인/제출
+- Yandex Webmaster 자체도메인·소유확인·제출
 - 중국 본토 안정적 도메인·호스팅 경로
 - Google/Bing/Naver/Daum 등 실제 등록·색인·노출 검증
 
@@ -70,7 +70,7 @@ PC 6종:
 
 실제 Left/Right Shift 최종 물리 QA는 다른 PC에서 재확인 예정.
 
-## 2026-09-03 전수 artifact QA
+## 2026-09-03 전수 Artifact QA
 
 실제 GitHub Pages artifact를 다운로드해 독립 검사했다.
 
@@ -114,28 +114,56 @@ PC 6종:
 - Pages workflow에 `Validate localized artifact` 단계를 추가
   - 검증 실패 시 Upload/Deploy 차단
 
-최신 run 84 (`33728981384`)도 **SUCCESS**.
-
 상세 기록: `QA_AUDIT_2026-09-03.md`
 
-## 2026-09-03 공개 Production Browser QA
+## 2026-09-03 공개 Production QA
 
-정적 산출물 PASS와 실제 공개 GitHub Pages PASS를 분리하기 위해 별도 `Production Browser Smoke` workflow를 추가했다. `push / workflow_dispatch / 6시간 주기`로 공개 URL을 직접 검사한다.
+정적 산출물 PASS와 실제 공개 GitHub Pages PASS를 분리하기 위해 `Production Browser Smoke`를 운영한다.
 
-첫 공개 검증 과정에서 실제 언어 선택기가 2개 생성되는 회귀를 발견했다.
+### 실제 공개 회귀 발견과 수정
+
+첫 공개 검증에서 언어 선택기가 2개 생성되는 회귀를 발견했다.
 
 확인된 원인:
 - 최신 canonical 선택기 `#languagePicker`
 - 오래된 글로벌 빌드 단계가 남기던 `.lang-switch`
 
-두 경로가 동시에 공개 산출물에 존재했다. 숨김 처리 대신 빌드 단계에서 구형 `.lang-switch`를 물리적으로 제거하도록 수정했다.
+숨김 처리 대신 글로벌 빌드에서 구형 `.lang-switch`를 물리적으로 제거했다.
 
 재발 방지:
-- `d1ec3263536e01fe23f4392095ba68f63a5c28a3` — 글로벌 빌드에서 legacy duplicate selector 실제 삭제
-- `22e2140c554d431add5a7918188bfe14b6ce8086` — 공개 QA를 browser locale-aware로 만들고 selector 중복·잘못된 locale redirect를 직접 검증
-- Production Browser Smoke run `33750417854`: **SUCCESS**
+- `d1ec3263536e01fe23f4392095ba68f63a5c28a3` — legacy duplicate selector 실제 삭제
+- `22e2140c554d431add5a7918188bfe14b6ce8086` — locale-aware 공개 QA와 selector 중복·잘못된 locale redirect 검사 추가
 
-현재 공개 QA가 확인하는 범위:
+### 오래된 배포를 현재 PASS로 착각하는 경로 제거
+
+기존 Production Smoke는 공개 sitemap이 117 URL인지 확인한 뒤 테스트했기 때문에, 새 commit의 GitHub Pages 배포가 아직 끝나지 않은 순간에는 **이전 배포본을 새 commit의 PASS로 잘못 검사할 가능성**이 있었다.
+
+이를 막기 위해:
+- Pages 빌드가 `dist/build-revision.txt`에 실제 `GITHUB_SHA`를 기록한다.
+- push 기반 Production QA는 공개 `build-revision.txt`가 현재 `GITHUB_SHA`와 정확히 같아질 때까지 기다린다.
+- 일치하지 않으면 QA를 시작하지 않고 실패한다.
+- 문서만 바뀐 commit은 불필요한 Pages 재배포·Production Smoke를 만들지 않는다.
+
+### 자동 다중 엔진 검증
+
+`tools/production-smoke.mjs`를 browser-engine selectable로 만들고 push/수동 실행에서는 다음 세 엔진을 독립 실행한다.
+
+- Chromium
+- Firefox
+- WebKit
+
+6시간 주기 heartbeat는 비용·시간을 줄이기 위해 Chromium만 실행한다.
+
+최종 검증:
+- Pages deploy run `33752636144`: **SUCCESS**
+- Production Browser Smoke run `33752636269`: **SUCCESS**
+- `Production QA · Chromium`: SUCCESS
+- `Production QA · firefox`: SUCCESS
+- `Production QA · webkit`: SUCCESS
+- 세 job 모두 `Wait for exact deployed revision`: SUCCESS
+
+현재 공개 QA 범위:
+- 현재 commit과 실제 공개 배포 revision 일치
 - sitemap 117 URL 실제 접근
 - 대표 `ko / en / ja / zh-CN / ru` 모바일 공개 화면
 - 대표 영어·중국어·러시아어 기능 페이지
@@ -146,7 +174,7 @@ PC 6종:
 - 대표 홈 모바일 horizontal overflow 없음
 - 예상하지 않은 외부 네트워크 origin 없음
 
-이 PASS는 실제 키보드·마우스·스피커·마이크·웹캠 등 물리 하드웨어와 Safari/Firefox 등 전체 교차브라우저 PASS를 대신하지 않는다.
+**Playwright WebKit PASS를 실제 iPhone Safari PASS로 부르지 않는다.** 자동 엔진 호환성은 확인됐지만 실제 기기·브라우저 UI·권한·하드웨어 동작은 별도 Gate다.
 
 ## 광고 준비 상태
 
@@ -184,7 +212,7 @@ PC:
 
 ## 아직 미완료 — 실제 물리/현실 QA
 
-자동/정적 QA PASS와 실제 하드웨어 PASS를 구분한다.
+자동 엔진 QA와 실제 하드웨어·실제 기기 PASS를 구분한다.
 
 필수 남은 QA:
 - 다른 PC에서 Left Shift / Right Shift 실제 분리 확인
@@ -199,8 +227,8 @@ PC:
 - 웹캠 실제 영상/장치선택
 - 모니터 실제 시각검사
 - Android 정식 6/6
-- iPhone Safari
-- Chrome / Edge / Firefox / Safari cross-browser
+- 실제 iPhone Safari
+- 실제 Chrome / Edge / Firefox / Safari 환경에서 권한·하드웨어 상호작용 확인
 - 현지어 네이티브 수준 검수
 - 실제 검색 색인·유입·사용 데이터
 
@@ -211,10 +239,11 @@ PC:
 - 배포: PASS
 - 정적/Artifact QA: **PASS WITH FIXES**
 - Red Team: PASS WITH FIXES
-- 공개 Production Browser QA: **PASS WITH FIXES**
+- 공개 exact-revision Production QA: **PASS WITH FIXES**
+- 자동 Chromium / Firefox / WebKit: **PASS**
 - 광고 슬롯 준비: PASS (실광고 미연결)
-- PC 물리 QA: PENDING
-- 교차브라우저 QA: PENDING
+- 실제 PC 물리 QA: PENDING
+- 실제 모바일·브라우저·하드웨어 QA: PENDING
 - 검색/시장 현실검증: PENDING
 
-다음 Gate는 **실제 PC 물리 QA + 교차브라우저 QA**다. 이후 광고 provider 연결/AdSense Gate, 검색유통, 실제 사용·시장 데이터를 분리해 진행한다.
+다음 Gate는 **실제 PC 물리 QA + 실제 Android/iPhone/브라우저 하드웨어 상호작용 QA**다. 이후 광고 provider 연결/AdSense Gate, 검색유통, 실제 사용·시장 데이터를 분리해 진행한다.
