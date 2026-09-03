@@ -5,7 +5,7 @@
 <title>PC 5분 전체 점검 | PC CHECKUP</title>
 <meta name="description" content="새 PC·중고 PC 거래 전 키보드, 마우스, 모니터, 오디오, 카메라를 순서대로 확인합니다.">
 <link rel="stylesheet" href="styles.css">
-<style>@media(max-width:600px){.toolbox>.summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.toolbox>.summary .stat{padding:11px 6px;min-width:0}.toolbox>.summary .stat span{font-size:11px;white-space:nowrap}.toolbox>.summary .stat b{font-size:21px}.checkitem{gap:12px}.check-actions{display:grid;grid-template-columns:1.25fr repeat(3,minmax(0,.8fr));gap:5px;width:100%;overflow:visible}.check-actions .btn,.check-actions .pill{min-width:0;min-height:42px;padding:7px 4px;font-size:11px;white-space:nowrap}.check-actions .btn{width:100%}}</style>
+<style>.ad-slot{width:100%;min-height:96px;margin:18px 0;border:1px dashed #34445a;border-radius:16px;background:#0d141d;display:flex;align-items:center;justify-content:center;color:#708095;font-size:11px;letter-spacing:.08em;text-transform:uppercase}.ad-slot span{opacity:.8}@media(max-width:600px){.toolbox>.summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.toolbox>.summary .stat{padding:11px 6px;min-width:0}.toolbox>.summary .stat span{font-size:11px;white-space:nowrap}.toolbox>.summary .stat b{font-size:21px}.checkitem{gap:12px}.check-actions{display:grid;grid-template-columns:1.25fr repeat(3,minmax(0,.8fr));gap:5px;width:100%;overflow:visible}.check-actions .btn,.check-actions .pill{min-width:0;min-height:42px;padding:7px 4px;font-size:11px;white-space:nowrap}.check-actions .btn{width:100%}.ad-slot{min-height:82px}}</style>
 <script src="app.js" defer></script>
 </head><body>
 <header><div class="wrap nav">
@@ -27,6 +27,7 @@
     <div class="checkitem" data-id="mic"><div><h3>5. 마이크</h3><p>입력 레벨과 파형 확인</p></div><div class="check-actions"><a class="btn" href="mic.html">검사 열기</a><button class="pill ok" data-value="ok">정상</button><button class="pill bad" data-value="bad">문제</button><button class="pill unknown" data-value="unknown">미확인</button></div></div>
     <div class="checkitem" data-id="webcam"><div><h3>6. 웹캠</h3><p>영상 입력과 해상도 확인</p></div><div class="check-actions"><a class="btn" href="webcam.html">검사 열기</a><button class="pill ok" data-value="ok">정상</button><button class="pill bad" data-value="bad">문제</button><button class="pill unknown" data-value="unknown">미확인</button></div></div>
   </div>
+  <div class="ad-slot" data-ad-slot="pc-checkup-result" aria-label="Advertisement"><span>Advertisement</span></div>
   <div class="controls"><button id="printCheckup" class="btn primary">결과 인쇄 / PDF</button><button id="resetCheckup" class="btn">전체 초기화</button></div>
 </section><aside class="side"><div class="notice"><strong>중요</strong><br>이 점검은 브라우저에서 볼 수 있는 기본 입출력 상태를 확인합니다. SSD 수명, RAM 오류, 배터리 열화, 내부 수리 이력은 별도 진단이 필요합니다.</div><div class="notice"><strong>POC 목표</strong><br>개별 도구보다 ‘구매 후 한 번에 점검’ 흐름이 실제 사용가치를 만드는지 검증합니다.</div></aside></div></main>
 <footer><div class="wrap">브라우저 안에서 바로 점검합니다. 카메라·마이크·키 입력은 서버로 전송하지 않는 구조를 기본으로 합니다.</div></footer></body></html>
