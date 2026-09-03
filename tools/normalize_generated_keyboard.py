@@ -18,9 +18,9 @@ def canonical_behavior_script() -> str:
 
 
 def harden_shift_detection(script: str) -> str:
-    """Prefer real browser side data, then keyup data, then a deterministic QA fallback."""
+    """Prefer real browser side data on keydown, then keyup; never guess Left/Right."""
     old_state = "let presses=0,repeats=0,unique=new Set(),current=new Set(),maxSimul=0,focusMode=false,fnArmed=false;"
-    new_state = old_state + "\n let pendingShift=false,shiftFallbackNext='ShiftLeft';"
+    new_state = old_state + "\n let pendingShift=false;"
     if old_state not in script:
         raise RuntimeError('Keyboard state anchor not found')
     script = script.replace(old_state, new_state, 1)
@@ -32,7 +32,7 @@ def harden_shift_detection(script: str) -> str:
     script = script.replace(old_down, new_down, 1)
 
     old_up = "const onUp=e=>{const family=modifierFamilyFromEvent(e);let code=family?modifierDown.get(family)||resolveModifier(family,e):physicalCode(e);release(code);const out=fnVisualDown.get(code);"
-    new_up = "const onUp=e=>{const family=modifierFamilyFromEvent(e);if(family==='Shift'&&pendingShift){let resolved=resolveModifier('Shift',e);if(!resolved){resolved=shiftFallbackNext;shiftFallbackNext=shiftFallbackNext==='ShiftLeft'?'ShiftRight':'ShiftLeft';text('keyLog',`Shift side fallback | verified: ${resolved} | browser exposed no side on keydown/keyup`)}else{text('keyLog',`Shift side resolved on keyup | code: ${e.code||'(none)'} | location: ${e.location} | resolved: ${resolved}`)}pendingShift=false;current.delete('ShiftPending');unique.add(resolved);paint(resolved,true);setTimeout(()=>paint(resolved,false),260);update();return}let code=family?modifierDown.get(family)||resolveModifier(family,e):physicalCode(e);release(code);const out=fnVisualDown.get(code);"
+    new_up = "const onUp=e=>{const family=modifierFamilyFromEvent(e);if(family==='Shift'&&pendingShift){const resolved=resolveModifier('Shift',e);pendingShift=false;current.delete('ShiftPending');if(!resolved){text('keyLog',`Shift side unresolved | keydown/keyup exposed no Left/Right data`);update();return}text('keyLog',`Shift side resolved on keyup | code: ${e.code||'(none)'} | location: ${e.location} | resolved: ${resolved}`);unique.add(resolved);paint(resolved,true);setTimeout(()=>paint(resolved,false),260);update();return}let code=family?modifierDown.get(family)||resolveModifier(family,e):physicalCode(e);release(code);const out=fnVisualDown.get(code);"
     if old_up not in script:
         raise RuntimeError('Keyboard keyup anchor not found')
     script = script.replace(old_up, new_up, 1)
@@ -97,4 +97,4 @@ for path in all_paths:
         raise RuntimeError(f'Keyboard behavior script not found: {path}')
     path.write_text(polish_fullscreen_ui(text), encoding='utf-8')
 
-print('Restored canonical keyboard behavior, hardened Shift side detection, and polished fullscreen exit UI')
+print('Restored canonical keyboard behavior, hardened non-guessing Shift side detection, and polished fullscreen exit UI')
