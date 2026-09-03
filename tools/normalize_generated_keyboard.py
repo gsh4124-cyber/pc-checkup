@@ -34,6 +34,33 @@ def polish_fullscreen_ui(text: str) -> str:
     return text.replace('</head>', override + '</head>', 1)
 
 
+def inject_printscreen_guidance(text: str) -> str:
+    text = re.sub(r'<p class="keyboard-note printscreen-fn-note">[\s\S]*?</p>', '', text, count=1)
+    lang_match = re.search(r'<html\s+lang="([^"]+)"', text, re.I)
+    lang = (lang_match.group(1) if lang_match else 'en').lower()
+    messages = {
+        'ko': 'PrintScreen이 반응하지 않으면 Fn + PrintScreen도 눌러보세요. 일부 노트북은 PrintScreen 기능을 Fn 조합으로 제공합니다.',
+        'en': 'If PrintScreen does not respond, also try Fn + PrintScreen. Some laptops provide PrintScreen through an Fn combination.',
+        'ja': 'PrintScreenが反応しない場合は、Fn + PrintScreenも試してください。一部のノートPCではPrintScreenがFnキーとの組み合わせになっています。',
+        'es': 'Si PrintScreen no responde, prueba también Fn + PrintScreen. Algunos portátiles ofrecen PrintScreen mediante una combinación con Fn.',
+        'de': 'Wenn PrintScreen nicht reagiert, probiere auch Fn + PrintScreen. Bei manchen Laptops ist PrintScreen nur über eine Fn-Kombination verfügbar.',
+        'fr': 'Si PrintScreen ne réagit pas, essayez aussi Fn + PrintScreen. Sur certains ordinateurs portables, PrintScreen fonctionne avec une combinaison Fn.',
+        'pt': 'Se PrintScreen não responder, tente também Fn + PrintScreen. Em alguns notebooks, o PrintScreen funciona por uma combinação com Fn.',
+        'it': 'Se PrintScreen non risponde, prova anche Fn + PrintScreen. Su alcuni portatili PrintScreen funziona tramite una combinazione con Fn.',
+        'nl': 'Als PrintScreen niet reageert, probeer dan ook Fn + PrintScreen. Op sommige laptops werkt PrintScreen via een Fn-combinatie.',
+        'id': 'Jika PrintScreen tidak merespons, coba juga Fn + PrintScreen. Pada beberapa laptop, PrintScreen tersedia melalui kombinasi Fn.',
+        'vi': 'Nếu PrintScreen không phản hồi, hãy thử thêm Fn + PrintScreen. Một số laptop dùng tổ hợp Fn cho chức năng PrintScreen.',
+        'zh-cn': '如果 PrintScreen 没有反应，也请尝试 Fn + PrintScreen。部分笔记本电脑需要通过 Fn 组合键使用 PrintScreen。',
+        'ru': 'Если PrintScreen не срабатывает, попробуйте также Fn + PrintScreen. На некоторых ноутбуках PrintScreen доступен только через сочетание с Fn.',
+    }
+    msg = messages.get(lang, messages['en'])
+    note = f'<p class="keyboard-note printscreen-fn-note">{msg}</p>'
+    anchor = '<div id="keyboard" class="keyboard"></div>'
+    if anchor not in text:
+        raise RuntimeError('keyboard anchor not found for PrintScreen guidance')
+    return text.replace(anchor, note + anchor, 1)
+
+
 def inject_runtime_helper(text: str) -> str:
     text = re.sub(r'\n<style>\n/\* keyboard-(?:raw-diagnostics|runtime-helper)-v[0-9]+ \*/[\s\S]*?</style>\n(?=</head>)', '\n', text, count=1)
     text = re.sub(r'\n<script>\n/\* keyboard-(?:raw-diagnostics|runtime-helper)-v[0-9]+ \*/[\s\S]*?</script>\n(?=</body>)', '\n', text, count=1)
@@ -144,7 +171,8 @@ for path in all_paths:
     if count != 1:
         raise RuntimeError(f'Keyboard behavior script not found: {path}')
     text = polish_fullscreen_ui(text)
+    text = inject_printscreen_guidance(text)
     text = inject_runtime_helper(text)
     path.write_text(text, encoding='utf-8')
 
-print('Copied canonical keyboard engine unchanged and added validator-safe Shift/Fn runtime helper')
+print('Copied canonical keyboard engine unchanged, added localized PrintScreen Fn guidance, and kept Shift/Fn runtime helper')
