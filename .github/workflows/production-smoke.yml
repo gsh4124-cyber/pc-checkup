@@ -1,0 +1,42 @@
+name: Production Browser Smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '30 */6 * * *'
+
+concurrency:
+  group: device-checkup-production-smoke
+  cancel-in-progress: true
+
+jobs:
+  production-browser-smoke:
+    name: Production Browser QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Wait for deployed GitHub Pages surface
+        run: |
+          set -e
+          for i in {1..24}; do
+            COUNT=$(curl -fsS --max-time 20 https://gsh4124-cyber.github.io/pc-checkup/sitemap.xml | grep -o '<loc>' | wc -l | tr -d ' ' || true)
+            if [ "$COUNT" = "117" ]; then
+              echo "Production sitemap is current: $COUNT URLs"
+              exit 0
+            fi
+            echo "Waiting for current production artifact; sitemap URL count=$COUNT"
+            sleep 10
+          done
+          exit 1
+      - name: Run public production QA
+        run: node tools/production-smoke.mjs
