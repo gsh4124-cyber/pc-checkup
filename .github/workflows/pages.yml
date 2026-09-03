@@ -3,6 +3,8 @@ name: Deploy DEVICE CHECKUP to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
@@ -66,6 +68,7 @@ jobs:
           python tools/normalize_generated_keyboard.py
           python tools/inject_language_ux.py
           python tools/localize_korean_ui.py
+          printf '%s\n' "$GITHUB_SHA" > dist/build-revision.txt
 
       - name: Validate localized artifact
         run: python tools/validate_dist.py
@@ -84,7 +87,9 @@ jobs:
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
-          print('Language UX present on all 117 pages and Korean keyboard prose is localized')
+          revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
+          assert revision, 'build revision missing'
+          print(f'Language UX present on all 117 pages; Korean keyboard prose localized; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
