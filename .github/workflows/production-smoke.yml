@@ -3,6 +3,8 @@ name: Production Browser Smoke
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
   schedule:
     - cron: '30 */6 * * *'
@@ -12,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  production-browser-smoke:
-    name: Production Browser QA
+  chromium-production:
+    name: Production QA · Chromium
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -25,18 +27,78 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Wait for deployed GitHub Pages surface
+      - name: Wait for exact deployed revision
         run: |
-          set -e
-          for i in {1..24}; do
-            COUNT=$(curl -fsS --max-time 20 https://gsh4124-cyber.github.io/pc-checkup/sitemap.xml | grep -o '<loc>' | wc -l | tr -d ' ' || true)
-            if [ "$COUNT" = "117" ]; then
-              echo "Production sitemap is current: $COUNT URLs"
+          set -euo pipefail
+          marker='https://gsh4124-cyber.github.io/pc-checkup/build-revision.txt'
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            expected="$GITHUB_SHA"
+          else
+            expected=$(curl -fsS --max-time 20 "$marker" | tr -d '\r\n')
+          fi
+          if ! printf '%s' "$expected" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "Invalid expected production revision: $expected"
+            exit 1
+          fi
+          for i in {1..30}; do
+            current=$(curl -fsS --max-time 20 "$marker" 2>/dev/null | tr -d '\r\n' || true)
+            if [ "$current" = "$expected" ]; then
+              echo "Exact production revision confirmed: $current"
               exit 0
             fi
-            echo "Waiting for current production artifact; sitemap URL count=$COUNT"
+            echo "Waiting for production revision: current=${current:-missing} expected=$expected"
             sleep 10
           done
+          echo "Production never reached expected revision $expected"
           exit 1
-      - name: Run public production QA
+      - name: Run Chromium production QA
+        env:
+          DEVICE_BROWSER: chromium
+        run: node tools/production-smoke.mjs
+
+  cross-browser-production:
+    name: Production QA · ${{ matrix.browser }}
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps "${{ matrix.browser }}"
+      - name: Wait for exact deployed revision
+        run: |
+          set -euo pipefail
+          marker='https://gsh4124-cyber.github.io/pc-checkup/build-revision.txt'
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            expected="$GITHUB_SHA"
+          else
+            expected=$(curl -fsS --max-time 20 "$marker" | tr -d '\r\n')
+          fi
+          if ! printf '%s' "$expected" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "Invalid expected production revision: $expected"
+            exit 1
+          fi
+          for i in {1..30}; do
+            current=$(curl -fsS --max-time 20 "$marker" 2>/dev/null | tr -d '\r\n' || true)
+            if [ "$current" = "$expected" ]; then
+              echo "Exact production revision confirmed: $current"
+              exit 0
+            fi
+            echo "Waiting for production revision: current=${current:-missing} expected=$expected"
+            sleep 10
+          done
+          echo "Production never reached expected revision $expected"
+          exit 1
+      - name: Run production QA
+        env:
+          DEVICE_BROWSER: ${{ matrix.browser }}
         run: node tools/production-smoke.mjs
