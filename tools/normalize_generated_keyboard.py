@@ -47,6 +47,26 @@ def polish_fullscreen_ui(text: str) -> str:
         return text
     return text.replace('</head>', override + '</head>', 1)
 
+
+def inject_raw_diagnostics(text: str) -> str:
+    """Add temporary raw-event instrumentation without changing keyboard behavior."""
+    marker = 'keyboard-raw-diagnostics-v1'
+    if marker in text:
+        return text
+
+    style = '''\n<style>\n/* keyboard-raw-diagnostics-v1 */\n.raw-key-events{margin-top:7px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#08111a;color:#d7e1ea;font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;min-height:46px;max-height:190px;overflow:auto}\n.raw-key-events strong{color:#fbbf24}\n.keyboard-test-active .raw-key-events{flex:0 0 auto;max-height:145px;margin-top:5px}\n</style>\n'''
+    text = text.replace('</head>', style + '</head>', 1)
+
+    panel = '<div id="rawKeyEvents" class="raw-key-events"><strong>RAW INPUT DIAGNOSTIC</strong> — press Right Shift, then Fn combinations. Recent 10 events will appear here.</div>'
+    if '<div id="keyLog"' in text:
+        text = text.replace('<div id="keyLog"', panel + '<div id="keyLog"', 1)
+    else:
+        raise RuntimeError('keyLog anchor not found for raw diagnostic panel')
+
+    script = r'''\n<script>\n/* keyboard-raw-diagnostics-v1 */\n(()=>{\n  const rows=[];\n  const render=()=>{\n    const el=document.getElementById('rawKeyEvents');\n    if(!el)return;\n    el.textContent='RAW INPUT DIAGNOSTIC — newest first\\n'+(rows.length?rows.join('\\n'):'(no keyboard event yet)');\n  };\n  const add=line=>{rows.unshift(line);if(rows.length>10)rows.length=10;render()};\n  const raw=e=>{\n    let shiftState='?';\n    try{shiftState=String(e.getModifierState('Shift'))}catch{}\n    add(`${e.type} | key=${JSON.stringify(e.key)} | code=${JSON.stringify(e.code)} | location=${e.location} | keyCode=${e.keyCode||0} | which=${e.which||0} | repeat=${e.repeat?'Y':'N'} | ShiftState=${shiftState}`);\n  };\n  window.addEventListener('keydown',raw,true);\n  window.addEventListener('keyup',raw,true);\n  document.addEventListener('DOMContentLoaded',()=>{\n    render();\n    document.getElementById('fnArm')?.addEventListener('click',()=>setTimeout(()=>{\n      const b=document.getElementById('fnArm');\n      add(`UI | Fn button clicked | text=${JSON.stringify(b?.textContent||'')} | active=${b?.classList.contains('active')?'Y':'N'}`);\n    },0));\n  });\n})();\n</script>\n'''
+    return text.replace('</body>', script + '</body>', 1)
+
+
 canonical = canonical_behavior_script()
 all_paths = [ROOT/'keyboard.html', ROOT/'en'/'keyboard.html'] + [ROOT/l/'keyboard.html' for l in LOCALES]
 for path in all_paths:
@@ -61,6 +81,8 @@ for path in all_paths:
     )
     if count != 1:
         raise RuntimeError(f'Keyboard behavior script not found: {path}')
-    path.write_text(polish_fullscreen_ui(text), encoding='utf-8')
+    text = polish_fullscreen_ui(text)
+    text = inject_raw_diagnostics(text)
+    path.write_text(text, encoding='utf-8')
 
-print('Copied canonical keyboard input engine unchanged to all locales and polished fullscreen UI')
+print('Copied canonical keyboard input engine unchanged and added raw input diagnostics to all locales')
