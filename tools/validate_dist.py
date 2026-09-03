@@ -102,8 +102,10 @@ for lang, folder in DIRS.items():
     for required in ['id="startKeyboard"','id="exitKeyboard"','id="resetKeyboard"','fitKeyboard','fnArmed','MetaLeft','MetaRight']:
         if required not in text:
             err(str(path.relative_to(ROOT)), 'keyboard invariant missing', required)
+    # Match only the obsolete identifiers themselves. Do not reject new helper
+    # names merely because they contain one of these strings as a substring.
     for forbidden in ['ShiftUnknown','shiftArm','initKeyboard']:
-        if forbidden in text:
+        if re.search(rf'\b{re.escape(forbidden)}\b', text):
             err(str(path.relative_to(ROOT)), 'obsolete keyboard path present', forbidden)
 
 # Reserved ad slots: exactly one on the three non-invasive surfaces per locale.
