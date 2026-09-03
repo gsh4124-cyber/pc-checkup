@@ -29,9 +29,17 @@ def href_for(current_locale: str, target_locale: str, filename: str) -> str:
 
 def inject(path: Path):
     text = path.read_text(encoding='utf-8')
+
+    # Remove this injector's previous output so the build is idempotent.
     text = re.sub(r'\n<style>\n/\* language-ux-v[0-9]+ \*/[\s\S]*?</style>\n(?=</head>)', '\n', text, count=1)
     text = re.sub(r'\n<script>\n/\* language-ux-v[0-9]+ \*/[\s\S]*?</script>\n(?=</body>)', '\n', text, count=1)
     text = re.sub(r'<div class="language-picker">[\s\S]*?</div>', '', text, count=1)
+
+    # Older global-build stages can still emit the retired `lang-switch` selector.
+    # It must be physically removed rather than hidden, otherwise users see two
+    # independent language controls and automation can interact with the wrong one.
+    text = re.sub(r'<style>\s*\.lang-switch\{[\s\S]*?</style>', '', text, count=1)
+    text = re.sub(r'<div class="lang-switch">[\s\S]*?</div>', '', text, count=1)
 
     locale = locale_for(path)
     filename = path.name
@@ -55,4 +63,4 @@ def inject(path: Path):
 paths = sorted(ROOT.rglob('*.html'))
 for path in paths:
     inject(path)
-print(f'Injected browser-language routing and manual language selector into {len(paths)} HTML pages')
+print(f'Injected one browser-language routing selector into {len(paths)} HTML pages; retired duplicate lang-switch removed')
