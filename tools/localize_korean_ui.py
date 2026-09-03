@@ -38,6 +38,13 @@ for path in root_pages:
     if path.name == 'keyboard.html':
         for old, new in KEYBOARD_REPLACEMENTS.items():
             text = text.replace(old, new)
+        # Catch any remaining user-facing fragments emitted by shared runtime code.
+        text = text.replace('Fn check', 'Fn 확인')
+        text = text.replace('Fn status:', 'Fn 상태:')
+        text = text.replace('Start keyboard test', '키보드 테스트 시작')
+        text = text.replace('Exit keyboard test', '키보드 테스트 종료')
+        text = text.replace('browser-visible secondary result', '브라우저에서 확인 가능한 보조 출력')
+        text = text.replace('inferred from verified opposite Shift', '확인된 반대쪽 Shift를 기준으로 추론')
     path.write_text(text, encoding='utf-8')
 
 # Guard the Korean keyboard against the exact accidental English UI phrases that
@@ -51,6 +58,7 @@ for forbidden in [
     'Fn status:',
     'Common ANSI-style layout.',
     'browser-visible secondary result',
+    'inferred from verified opposite Shift',
 ]:
     if forbidden in ko_keyboard:
         raise RuntimeError(f'Korean keyboard UI still contains English phrase: {forbidden}')
