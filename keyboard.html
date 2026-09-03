@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const text=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
   const update=()=>{text("pressCount",presses);text("repeatCount",repeats);text("uniqueCount",unique.size);text("maxSimul",maxSimul);};
   const layoutKey="pc-checkup-keyboard-numpad-v1";
+  const reserved=new Set(["MetaLeft","MetaRight","OSLeft","OSRight"]);
 
   const side=(left,right,e)=>e.location===2?right:left;
   const resolveCode=e=>{
@@ -65,7 +66,13 @@ document.addEventListener("DOMContentLoaded",()=>{
     requestAnimationFrame(fitKeyboard);
   };
 
+  const clearPressed=()=>{
+    current.clear();
+    host.querySelectorAll(".key.active").forEach(k=>k.classList.remove("active"));
+  };
+
   setTimeout(()=>{
+    host.querySelectorAll('[data-code="MetaLeft"],[data-code="MetaRight"]').forEach(el=>el.remove());
     mainGrid=document.createElement("div");mainGrid.className="main-keyboard-grid";
     [...host.children].forEach(el=>mainGrid.appendChild(el));
     board=document.createElement("div");board.className="keyboard-board";board.id="keyboardBoard";board.appendChild(mainGrid);
@@ -77,18 +84,21 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   document.querySelectorAll(".layout-btn").forEach(b=>b.addEventListener("click",()=>applyLayout(b.dataset.mode)));
   window.addEventListener("resize",()=>requestAnimationFrame(fitKeyboard));
+  window.addEventListener("blur",clearPressed);
+  document.addEventListener("visibilitychange",()=>{if(document.hidden)clearPressed();});
 
   const onDown=e=>{
     e.stopImmediatePropagation();
     const code=resolveCode(e);
+    if(reserved.has(code)){clearPressed();return;}
     if(["Tab","Space","ArrowUp","ArrowDown"].includes(code))e.preventDefault();
     if(e.repeat)repeats++;else{presses++;if(code){unique.add(code);current.add(code);}maxSimul=Math.max(maxSimul,current.size);}
     if(code)host.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.add("active"));
     text("keyLog",`key: ${e.key}  |  code: ${e.code||"(none)"}  |  resolved: ${code||"unknown"}  |  repeat: ${e.repeat?"yes":"no"}`);update();
   };
-  const onUp=e=>{e.stopImmediatePropagation();const code=resolveCode(e);if(code){current.delete(code);host.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.remove("active"));}};
+  const onUp=e=>{e.stopImmediatePropagation();const code=resolveCode(e);if(reserved.has(code)){clearPressed();return;}if(code){current.delete(code);host.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.remove("active"));}};
   window.addEventListener("keydown",onDown,{capture:true,passive:false});window.addEventListener("keyup",onUp,{capture:true});
-  document.getElementById("resetKeyboard")?.addEventListener("click",()=>{presses=0;repeats=0;unique.clear();current.clear();maxSimul=0;host.querySelectorAll(".key.active").forEach(el=>el.classList.remove("active"));text("keyLog","");update();});
+  document.getElementById("resetKeyboard")?.addEventListener("click",()=>{presses=0;repeats=0;unique.clear();current.clear();maxSimul=0;clearPressed();text("keyLog","");update();});
 });
 </script>
 </head><body>
