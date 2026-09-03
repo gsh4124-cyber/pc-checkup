@@ -58,8 +58,8 @@ document.addEventListener("DOMContentLoaded",()=>{
       const key=host.querySelector(`[data-code="${CSS.escape(code)}"]`);
       if(key) key.classList.add("active");
     }
-    const raw=e.code || "(없음)";
-    text("keyLog",`key: ${e.key}  |  code: ${raw}  |  감지: ${code || "미확인"}  |  repeat: ${e.repeat ? "yes":"no"}`);
+    const raw=e.code || "(none)";
+    text("keyLog",`key: ${e.key}  |  code: ${raw}  |  resolved: ${code || "unknown"}  |  repeat: ${e.repeat ? "yes":"no"}`);
     update();
   };
 
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("resetKeyboard")?.addEventListener("click",()=>{
     presses=0; repeats=0; unique.clear(); current.clear(); maxSimul=0;
     host.querySelectorAll(".key.active").forEach(el=>el.classList.remove("active"));
-    text("keyLog","키를 눌러보세요.");
+    text("keyLog","");
     update();
   });
 });
