@@ -4,46 +4,6 @@ const $$ = (s, root=document) => [...root.querySelectorAll(s)];
 function setText(id, value){ const el=document.getElementById(id); if(el) el.textContent=value; }
 function clamp(n,a,b){ return Math.min(Math.max(n,a),b); }
 
-function initKeyboard(){
-  const host=$("#keyboard");
-  if(!host) return;
-  const layout=[
-    ["Escape","Esc"],["F1","F1"],["F2","F2"],["F3","F3"],["F4","F4"],["F5","F5"],["F6","F6"],["F7","F7"],["F8","F8"],["F9","F9"],["F10","F10"],["F11","F11"],["F12","F12"],
-    ["Backquote","`"],["Digit1","1"],["Digit2","2"],["Digit3","3"],["Digit4","4"],["Digit5","5"],["Digit6","6"],["Digit7","7"],["Digit8","8"],["Digit9","9"],["Digit0","0"],["Minus","-"],["Equal","="],["Backspace","Backspace","w2"],
-    ["Tab","Tab","w2"],["KeyQ","Q"],["KeyW","W"],["KeyE","E"],["KeyR","R"],["KeyT","T"],["KeyY","Y"],["KeyU","U"],["KeyI","I"],["KeyO","O"],["KeyP","P"],["BracketLeft","["],["BracketRight","]"],["Backslash","\\","w2"],
-    ["CapsLock","Caps","w2"],["KeyA","A"],["KeyS","S"],["KeyD","D"],["KeyF","F"],["KeyG","G"],["KeyH","H"],["KeyJ","J"],["KeyK","K"],["KeyL","L"],["Semicolon",";"],["Quote","'"],["Enter","Enter","w2"],
-    ["ShiftLeft","Shift","w2"],["KeyZ","Z"],["KeyX","X"],["KeyC","C"],["KeyV","V"],["KeyB","B"],["KeyN","N"],["KeyM","M"],["Comma",","],["Period","."],["Slash","/"],["ShiftRight","Shift","w2"],
-    ["ControlLeft","Ctrl"],["MetaLeft","Win"],["AltLeft","Alt"],["Space","Space","w3"],["AltRight","Alt"],["MetaRight","Win"],["ContextMenu","Menu"],["ControlRight","Ctrl"]
-  ];
-  layout.forEach(([code,label,w])=>{
-    const d=document.createElement("div");
-    d.className="key"+(w?` ${w}`:"");
-    d.dataset.code=code; d.textContent=label; host.appendChild(d);
-  });
-  let presses=0, repeats=0, unique=new Set(), current=new Set(), maxSimul=0;
-  const update=()=>{
-    setText("pressCount", presses);
-    setText("repeatCount", repeats);
-    setText("uniqueCount", unique.size);
-    setText("maxSimul", maxSimul);
-  };
-  window.addEventListener("keydown", e=>{
-    if(["Tab","Space","ArrowUp","ArrowDown"].includes(e.code)) e.preventDefault();
-    if(e.repeat){ repeats++; } else { presses++; unique.add(e.code); current.add(e.code); maxSimul=Math.max(maxSimul,current.size); }
-    const key=host.querySelector(`[data-code="${CSS.escape(e.code)}"]`); if(key) key.classList.add("active");
-    setText("keyLog", `key: ${e.key}  |  code: ${e.code}  |  repeat: ${e.repeat ? "yes":"no"}`);
-    update();
-  }, {passive:false});
-  window.addEventListener("keyup", e=>{
-    current.delete(e.code);
-    const key=host.querySelector(`[data-code="${CSS.escape(e.code)}"]`); if(key) key.classList.remove("active");
-  });
-  $("#resetKeyboard")?.addEventListener("click",()=>{
-    presses=0; repeats=0; unique.clear(); current.clear(); maxSimul=0; $$(".key.active",host).forEach(x=>x.classList.remove("active")); setText("keyLog","키를 눌러보세요."); update();
-  });
-  update();
-}
-
 function initMouse(){
   const pad=$("#mousePad"); if(!pad) return;
   let left=0,right=0,middle=0,wheel=0,lastLeft=0,suspicious=0,minGap=Infinity;
@@ -249,7 +209,7 @@ function initCheckup(){
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
-  initKeyboard();initMouse();initMic();initCam();initSpeaker();initDisplay();initCheckup();
+  initMouse();initMic();initCam();initSpeaker();initDisplay();initCheckup();
 });
 window.addEventListener("beforeunload",()=>{
   media.micStream?.getTracks().forEach(t=>t.stop());
