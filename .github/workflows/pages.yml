@@ -33,12 +33,13 @@ jobs:
             tools/expand_batch2.py \
             tools/append_cn_ru.py \
             tools/normalize_generated_keyboard.py \
+            tools/inject_language_ux.py \
             tools/validate_dist.py
 
       - name: Check required source files
         run: |
           set -e
-          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_keyboard.py tools/validate_dist.py; do
+          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_keyboard.py tools/inject_language_ux.py tools/validate_dist.py; do
             test -s "$file"
           done
 
@@ -62,9 +63,24 @@ jobs:
           python tools/expand_batch2.py
           python tools/append_cn_ru.py
           python tools/normalize_generated_keyboard.py
+          python tools/inject_language_ux.py
 
       - name: Validate localized artifact
         run: python tools/validate_dist.py
+
+      - name: Validate language UX coverage
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          pages=list(Path('dist').rglob('*.html'))
+          assert len(pages)==117, len(pages)
+          for p in pages:
+              t=p.read_text(encoding='utf-8')
+              assert 'id="languagePicker"' in t, p
+              assert 'language-ux-v1' in t, p
+              assert 'data-locale=' in t, p
+          print('Language UX present on all 117 pages')
+          PY
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
