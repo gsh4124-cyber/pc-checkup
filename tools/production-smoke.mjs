@@ -1,9 +1,13 @@
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 
 const base = 'https://gsh4124-cyber.github.io/pc-checkup';
 const expectedSitemapUrls = 117;
 const problems = [];
 const assert = (ok, message) => { if (!ok) problems.push(message); };
+const browserName = process.env.DEVICE_BROWSER || 'chromium';
+const browserTypes = { chromium, firefox, webkit };
+const browserType = browserTypes[browserName];
+if (!browserType) throw new Error(`Unsupported DEVICE_BROWSER: ${browserName}`);
 
 const sitemapResponse = await fetch(`${base}/sitemap.xml`);
 assert(sitemapResponse.ok, `sitemap HTTP ${sitemapResponse.status}`);
@@ -26,7 +30,7 @@ for (let i = 0; i < urls.length; i += 12) {
   }
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await browserType.launch({ headless: true });
 const representative = [
   { path: '/', lang: 'ko', browserLocale: 'ko-KR' },
   { path: '/en/', lang: 'en', browserLocale: 'en-US' },
@@ -91,4 +95,4 @@ if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log(`DEVICE CHECKUP production QA passed: ${urls.length} sitemap URLs reachable; representative ko/en/ja/zh-CN/ru mobile surfaces and tool pages had one language selector, no page errors, no horizontal overflow on home surfaces, and no unexpected external network origins.`);
+console.log(`DEVICE CHECKUP production QA passed on ${browserName}: ${urls.length} sitemap URLs reachable; representative ko/en/ja/zh-CN/ru mobile surfaces and tool pages had one language selector, no page errors, no horizontal overflow on home surfaces, and no unexpected external network origins.`);
