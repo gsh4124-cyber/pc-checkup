@@ -9,7 +9,7 @@
 <style>
 .tool-layout{grid-template-columns:minmax(0,1fr) 250px}
 .keyboard-layout-toggle{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}.layout-btn{border:1px solid var(--line);background:#121c28;color:var(--muted);padding:10px 14px;border-radius:12px;font-weight:800}.layout-btn.active{background:var(--accent);color:#062217;border-color:var(--accent)}
-#keyboard.keyboard{display:block;overflow:hidden;padding:5px 2px 9px;width:100%;min-height:1px;margin-top:10px}.keyboard-board{display:flex;align-items:flex-start;gap:14px;width:max-content;transform-origin:top left}.main-keyboard{width:760px;min-width:760px}.key-row{display:flex;gap:6px;margin-bottom:6px;height:44px}.key-row.function-row{margin-bottom:14px}.key{flex:0 0 44px;width:44px;min-width:44px;min-height:44px;height:44px}.key.spacer{visibility:hidden;border:0;background:transparent;flex-basis:18px;width:18px;min-width:18px}.key.w125{flex-basis:56px;width:56px}.key.w15{flex-basis:68px;width:68px}.key.w175{flex-basis:80px;width:80px}.key.w2{flex-basis:92px;width:92px}.key.w225{flex-basis:104px;width:104px}.key.w275{flex-basis:128px;width:128px}.key.spacebar{flex:0 0 275px;width:275px;min-width:275px}
+#keyboard.keyboard{display:block;overflow:hidden;padding:5px 2px 9px;width:100%;min-height:1px;margin-top:10px}.keyboard-board{display:flex;align-items:flex-start;gap:14px;width:max-content;transform-origin:top left}.main-keyboard{width:760px;min-width:760px}.key-row{display:flex;gap:6px;margin-bottom:6px;height:44px}.key-row.function-row{margin-bottom:14px}.key{flex:0 0 44px;width:44px;min-width:44px;min-height:44px;height:44px}.key.spacer{visibility:hidden;border:0;background:transparent;flex-basis:18px;width:18px;min-width:18px}.key.w125{flex-basis:56px;width:56px}.key.w15{flex-basis:68px;width:68px}.key.w175{flex-basis:80px;width:80px}.key.w2{flex-basis:92px;width:92px}.key.w225{flex-basis:104px;width:104px}.key.w275{flex-basis:128px;width:128px}.key.spacebar{flex:0 0 275px;width:275px;min-width:275px}.key.spacebar-ko{flex:0 0 165px;width:165px;min-width:165px}.key.langkey{font-size:10px;line-height:1.15}
 .nav-cluster{width:144px;min-width:144px;display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:44px 2px 44px 44px 44px 44px 44px;gap:6px}.nav-cluster .key{min-width:44px}.nav-cluster .prt{grid-column:1;grid-row:1}.nav-cluster .scr{grid-column:2;grid-row:1}.nav-cluster .pause{grid-column:3;grid-row:1}.nav-cluster .ins{grid-column:1;grid-row:3}.nav-cluster .home{grid-column:2;grid-row:3}.nav-cluster .pgup{grid-column:3;grid-row:3}.nav-cluster .del{grid-column:1;grid-row:4}.nav-cluster .end{grid-column:2;grid-row:4}.nav-cluster .pgdn{grid-column:3;grid-row:4}.nav-cluster .up{grid-column:2;grid-row:6}.nav-cluster .left{grid-column:1;grid-row:7}.nav-cluster .down{grid-column:2;grid-row:7}.nav-cluster .right{grid-column:3;grid-row:7}
 .numpad-grid{display:grid;grid-template-columns:repeat(4,44px);grid-template-rows:repeat(5,44px);gap:6px;width:194px;min-width:194px;margin-top:58px}.numpad-grid .key{min-width:44px}.numpad-grid .num-plus{grid-column:4;grid-row:2 / span 2;height:94px}.numpad-grid .num-enter{grid-column:4;grid-row:4 / span 2;height:94px}.numpad-grid .num-zero{grid-column:1 / span 2;width:94px}.keyboard-layout-note{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.5}
 @media(max-width:860px){.tool-layout{grid-template-columns:1fr}.side{grid-row:auto}}
@@ -21,9 +21,12 @@ document.addEventListener("DOMContentLoaded",()=>{
   const text=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
   const update=()=>{text("pressCount",presses);text("repeatCount",repeats);text("uniqueCount",unique.size);text("maxSimul",maxSimul);};
   const layoutKey="pc-checkup-keyboard-numpad-v1";
+  const isKo=(document.documentElement.lang||"").toLowerCase().startsWith("ko");
+  const navFunctionKeys=new Set(["Home","End","PageUp","PageDown","Insert","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);
   const resolveCode=e=>{
-    const functional={Home:"Home",End:"End",PageUp:"PageUp",PageDown:"PageDown"};
-    if(functional[e.key])return functional[e.key];
+    if(e.key==="HangulMode"||e.key==="Hangul"||e.keyCode===21)return "HangulMode";
+    if(e.key==="HanjaMode"||e.key==="Hanja"||e.keyCode===25)return "HanjaMode";
+    if(navFunctionKeys.has(e.key))return e.key;
     const code=e.code||"";
     const aliases={OSLeft:"MetaLeft",OSRight:"MetaRight"};
     if(aliases[code])return aliases[code];
@@ -31,10 +34,15 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(e.key==="Control"||code==="ControlLeft"||code==="ControlRight"||e.keyCode===17)return (code==="ControlRight"||e.location===2)?"ControlRight":"ControlLeft";
     if(e.key==="Alt"||e.key==="AltGraph"||code==="AltLeft"||code==="AltRight"||e.keyCode===18)return (code==="AltRight"||e.location===2)?"AltRight":"AltLeft";
     if(e.key==="Meta"||e.key==="OS"||code==="MetaLeft"||code==="MetaRight"||e.keyCode===91||e.keyCode===92)return (code==="MetaRight"||e.location===2)?"MetaRight":"MetaLeft";
-    if(e.key==="HangulMode"||e.key==="Hangul"||e.keyCode===21)return "HangulMode";
-    if(e.key==="HanjaMode"||e.key==="Hanja"||e.keyCode===25)return "HanjaMode";
     if(code)return code;
     return "";
+  };
+  const codesForEvent=e=>{
+    const primary=resolveCode(e); if(!primary)return [];
+    if(primary==="HangulMode"||primary==="HanjaMode")return [primary];
+    const raw=e.code||"";
+    if(navFunctionKeys.has(primary)&&raw&&raw!==primary)return [primary,raw];
+    return [primary];
   };
   const makeKey=(code,label,cls="")=>{const d=document.createElement("div");d.className=`key ${cls}`.trim();if(code)d.dataset.code=code;d.textContent=label;return d;};
   const rows=[
@@ -42,10 +50,11 @@ document.addEventListener("DOMContentLoaded",()=>{
     [["Backquote","`"],["Digit1","1"],["Digit2","2"],["Digit3","3"],["Digit4","4"],["Digit5","5"],["Digit6","6"],["Digit7","7"],["Digit8","8"],["Digit9","9"],["Digit0","0"],["Minus","-"],["Equal","="],["Backspace","Backspace","w2"]],
     [["Tab","Tab","w15"],["KeyQ","Q"],["KeyW","W"],["KeyE","E"],["KeyR","R"],["KeyT","T"],["KeyY","Y"],["KeyU","U"],["KeyI","I"],["KeyO","O"],["KeyP","P"],["BracketLeft","["],["BracketRight","]"],["Backslash","\\","w15"]],
     [["CapsLock","Caps","w175"],["KeyA","A"],["KeyS","S"],["KeyD","D"],["KeyF","F"],["KeyG","G"],["KeyH","H"],["KeyJ","J"],["KeyK","K"],["KeyL","L"],["Semicolon",";"],["Quote","'"],["Enter","Enter","w225"]],
-    [["ShiftLeft","Shift","w225"],["KeyZ","Z"],["KeyX","X"],["KeyC","C"],["KeyV","V"],["KeyB","B"],["KeyN","N"],["KeyM","M"],["Comma",","],["Period","."],["Slash","/"],["ShiftRight","Shift","w275"]],
-    [["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["Space","Space","spacebar"],["AltRight","Alt","w125"],["MetaRight","Win","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]]
+    [["ShiftLeft","Shift","w225"],["KeyZ","Z"],["KeyX","X"],["KeyC","C"],["KeyV","V"],["KeyB","B"],["KeyN","N"],["KeyM","M"],["Comma",","],["Period","."],["Slash","/"],["ShiftRight","Shift","w275"]]
   ];
-  const buildMain=()=>{const main=document.createElement("div");main.className="main-keyboard";rows.forEach((row,i)=>{const r=document.createElement("div");r.className="key-row"+(i===0?" function-row":"");row.forEach(([c,l,cl])=>r.appendChild(makeKey(c,l,cl)));main.appendChild(r);});return main;};
+  const ansiBottom=[["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["Space","Space","spacebar"],["AltRight","Alt","w125"],["MetaRight","Win","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]];
+  const koreanBottom=[["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["HanjaMode","Hanja","w125 langkey"],["Space","Space","spacebar-ko"],["HangulMode","Han/Eng","w125 langkey"],["AltRight","Alt","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]];
+  const buildMain=()=>{const main=document.createElement("div");main.className="main-keyboard";[...rows,[...(isKo?koreanBottom:ansiBottom)]].forEach((row,i)=>{const r=document.createElement("div");r.className="key-row"+(i===0?" function-row":"");row.forEach(([c,l,cl])=>r.appendChild(makeKey(c,l,cl)));main.appendChild(r);});return main;};
   const buildNav=()=>{const nav=document.createElement("div");nav.className="nav-cluster";[["PrintScreen","PrtSc","prt"],["ScrollLock","ScrLk","scr"],["Pause","Pause","pause"],["Insert","Ins","ins"],["Home","Home","home"],["PageUp","PgUp","pgup"],["Delete","Del","del"],["End","End","end"],["PageDown","PgDn","pgdn"],["ArrowUp","↑","up"],["ArrowLeft","←","left"],["ArrowDown","↓","down"],["ArrowRight","→","right"]].forEach(([c,l,cl])=>nav.appendChild(makeKey(c,l,cl)));return nav;};
   const buildNumpad=()=>{const pad=document.createElement("div");pad.className="numpad-grid";pad.id="numpadGrid";[["NumLock","Num"],["NumpadDivide","/"],["NumpadMultiply","*"],["NumpadSubtract","-"],["Numpad7","7"],["Numpad8","8"],["Numpad9","9"],["NumpadAdd","+","num-plus"],["Numpad4","4"],["Numpad5","5"],["Numpad6","6"],["Numpad1","1"],["Numpad2","2"],["Numpad3","3"],["NumpadEnter","Enter","num-enter"],["Numpad0","0","num-zero"],["NumpadDecimal","."]].forEach(([c,l,cl])=>pad.appendChild(makeKey(c,l,cl)));return pad;};
   const board=document.createElement("div");board.className="keyboard-board";board.appendChild(buildMain());board.appendChild(buildNav());host.innerHTML="";host.appendChild(board);
@@ -56,8 +65,8 @@ document.addEventListener("DOMContentLoaded",()=>{
   const clearPressed=()=>{current.clear();releaseTimers.forEach(clearTimeout);releaseTimers.clear();host.querySelectorAll(".key.active").forEach(k=>k.classList.remove("active"));};
   let mode="with";try{mode=localStorage.getItem(layoutKey)||"with";}catch{}if(mode!=="without")mode="with";applyLayout(mode);
   document.querySelectorAll(".layout-btn").forEach(b=>b.addEventListener("click",()=>applyLayout(b.dataset.mode)));window.addEventListener("resize",()=>requestAnimationFrame(fitKeyboard));window.addEventListener("blur",clearPressed);window.addEventListener("pagehide",clearPressed);document.addEventListener("visibilitychange",()=>{if(document.hidden)clearPressed();});
-  const onDown=e=>{e.stopImmediatePropagation();const code=resolveCode(e);if(["Tab","Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(code))e.preventDefault();if(e.repeat)repeats++;else{presses++;if(code){unique.add(code);current.add(code);}maxSimul=Math.max(maxSimul,current.size);}if(code){host.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.add("active"));armSafetyRelease(code);}text("keyLog",`key: ${e.key} | code: ${e.code||"(none)"} | resolved: ${code||"unknown"} | location: ${e.location} | repeat: ${e.repeat?"yes":"no"}`);update();};
-  const onUp=e=>{e.stopImmediatePropagation();releaseCode(resolveCode(e));};window.addEventListener("keydown",onDown,{capture:true,passive:false});window.addEventListener("keyup",onUp,{capture:true});document.getElementById("resetKeyboard")?.addEventListener("click",()=>{presses=0;repeats=0;unique.clear();current.clear();maxSimul=0;clearPressed();text("keyLog","");update();});update();
+  const onDown=e=>{e.stopImmediatePropagation();const codes=codesForEvent(e),primary=codes[0]||"";if(["Tab","Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(primary))e.preventDefault();if(e.repeat)repeats++;else{presses++;codes.forEach(c=>{unique.add(c);current.add(c);});maxSimul=Math.max(maxSimul,current.size);}codes.forEach(c=>{host.querySelectorAll(`[data-code="${CSS.escape(c)}"]`).forEach(k=>k.classList.add("active"));armSafetyRelease(c);});text("keyLog",`key: ${e.key} | code: ${e.code||"(none)"} | resolved: ${primary||"unknown"} | location: ${e.location} | repeat: ${e.repeat?"yes":"no"}`);update();};
+  const onUp=e=>{e.stopImmediatePropagation();codesForEvent(e).forEach(releaseCode);};window.addEventListener("keydown",onDown,{capture:true,passive:false});window.addEventListener("keyup",onUp,{capture:true});document.getElementById("resetKeyboard")?.addEventListener("click",()=>{presses=0;repeats=0;unique.clear();current.clear();maxSimul=0;clearPressed();text("keyLog","");update();});update();
 });
 </script>
 </head><body>
