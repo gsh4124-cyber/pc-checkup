@@ -6,6 +6,86 @@
 <meta name="description" content="키보드 키 인식과 동시입력을 온라인에서 확인합니다.">
 <link rel="stylesheet" href="styles.css">
 <script src="app.js" defer></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const host=document.getElementById("keyboard");
+  if(!host) return;
+
+  let presses=0, repeats=0, unique=new Set(), current=new Set(), maxSimul=0;
+  const text=(id,value)=>{ const el=document.getElementById(id); if(el) el.textContent=value; };
+  const update=()=>{
+    text("pressCount",presses);
+    text("repeatCount",repeats);
+    text("uniqueCount",unique.size);
+    text("maxSimul",maxSimul);
+  };
+
+  const side=(left,right,e)=>e.location===2 ? right : left;
+  const resolveCode=e=>{
+    const code=e.code || "";
+    const aliases={OSLeft:"MetaLeft",OSRight:"MetaRight"};
+    if(aliases[code]) return aliases[code];
+    if(code && host.querySelector(`[data-code="${CSS.escape(code)}"]`)) return code;
+
+    if(e.key==="Shift" || e.keyCode===16) return side("ShiftLeft","ShiftRight",e);
+    if(e.key==="Control" || e.keyCode===17) return side("ControlLeft","ControlRight",e);
+    if(e.key==="Alt" || e.key==="AltGraph" || e.keyCode===18) return side("AltLeft","AltRight",e);
+    if(e.key==="Meta" || e.key==="OS" || e.keyCode===91 || e.keyCode===92) return side("MetaLeft","MetaRight",e);
+
+    // Korean Windows keyboards often expose the physical right Alt/Ctrl as
+    // Hangul/Hanja keys instead of ordinary modifier codes.
+    if(e.key==="HangulMode" || e.key==="Hangul" || e.keyCode===21) return "AltRight";
+    if(e.key==="HanjaMode" || e.key==="Hanja" || e.keyCode===25) return "ControlRight";
+
+    return code;
+  };
+
+  const onDown=e=>{
+    e.stopImmediatePropagation();
+    const code=resolveCode(e);
+    if(["Tab","Space","ArrowUp","ArrowDown"].includes(code)) e.preventDefault();
+
+    if(e.repeat){
+      repeats++;
+    }else{
+      presses++;
+      if(code) unique.add(code);
+      if(code) current.add(code);
+      maxSimul=Math.max(maxSimul,current.size);
+    }
+
+    if(code){
+      const key=host.querySelector(`[data-code="${CSS.escape(code)}"]`);
+      if(key) key.classList.add("active");
+    }
+    const raw=e.code || "(없음)";
+    text("keyLog",`key: ${e.key}  |  code: ${raw}  |  감지: ${code || "미확인"}  |  repeat: ${e.repeat ? "yes":"no"}`);
+    update();
+  };
+
+  const onUp=e=>{
+    e.stopImmediatePropagation();
+    const code=resolveCode(e);
+    if(code){
+      current.delete(code);
+      const key=host.querySelector(`[data-code="${CSS.escape(code)}"]`);
+      if(key) key.classList.remove("active");
+    }
+  };
+
+  // Capture phase runs before the legacy app.js window handlers, allowing us
+  // to normalize browsers/keyboards that omit KeyboardEvent.code.
+  window.addEventListener("keydown",onDown,{capture:true,passive:false});
+  window.addEventListener("keyup",onUp,{capture:true});
+
+  document.getElementById("resetKeyboard")?.addEventListener("click",()=>{
+    presses=0; repeats=0; unique.clear(); current.clear(); maxSimul=0;
+    host.querySelectorAll(".key.active").forEach(el=>el.classList.remove("active"));
+    text("keyLog","키를 눌러보세요.");
+    update();
+  });
+});
+</script>
 </head><body>
 <header><div class="wrap nav">
   <a class="brand" href="index.html">PC <span>CHECKUP</span></a>
