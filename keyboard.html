@@ -7,98 +7,77 @@
 <link rel="stylesheet" href="styles.css">
 <style>
 .tool-layout{grid-template-columns:minmax(0,1fr) 250px}
-.keyboard-layout-toggle{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}.layout-btn{border:1px solid var(--line);background:#121c28;color:var(--muted);padding:10px 14px;border-radius:12px;font-weight:800}.layout-btn.active{background:var(--accent);color:#062217;border-color:var(--accent)}
+.keyboard-layout-toggle,.keyboard-test-mode{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}.layout-btn,.mode-btn{border:1px solid var(--line);background:#121c28;color:var(--muted);padding:10px 14px;border-radius:12px;font-weight:800}.layout-btn.active,.mode-btn.active{background:var(--accent);color:#062217;border-color:var(--accent)}
 #keyboard.keyboard{display:block;overflow:hidden;padding:5px 2px 9px;width:100%;min-height:1px;margin-top:10px}.keyboard-board{display:flex;align-items:flex-start;gap:14px;width:max-content;transform-origin:top left}.main-keyboard{width:760px;min-width:760px}.key-row{display:flex;gap:6px;margin-bottom:6px;height:44px}.key-row.function-row{margin-bottom:14px}.key{flex:0 0 44px;width:44px;min-width:44px;min-height:44px;height:44px}.key.spacer{visibility:hidden;border:0;background:transparent;flex-basis:18px;width:18px;min-width:18px}.key.w125{flex-basis:56px;width:56px}.key.w15{flex-basis:68px;width:68px}.key.w175{flex-basis:80px;width:80px}.key.w2{flex-basis:92px;width:92px}.key.w225{flex-basis:104px;width:104px}.key.w275{flex-basis:128px;width:128px}.key.spacebar{flex:0 0 275px;width:275px;min-width:275px}.key.spacebar-ko{flex:0 0 165px;width:165px;min-width:165px}.key.langkey{font-size:10px;line-height:1.15}.key.active{background:var(--accent);border-color:var(--accent);color:#062217;box-shadow:0 0 0 2px rgba(255,255,255,.55) inset}
 .nav-cluster{width:144px;min-width:144px;display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:44px 2px 44px 44px 44px 44px 44px;gap:6px}.nav-cluster .key{min-width:44px}.nav-cluster .prt{grid-column:1;grid-row:1}.nav-cluster .scr{grid-column:2;grid-row:1}.nav-cluster .pause{grid-column:3;grid-row:1}.nav-cluster .ins{grid-column:1;grid-row:3}.nav-cluster .home{grid-column:2;grid-row:3}.nav-cluster .pgup{grid-column:3;grid-row:3}.nav-cluster .del{grid-column:1;grid-row:4}.nav-cluster .end{grid-column:2;grid-row:4}.nav-cluster .pgdn{grid-column:3;grid-row:4}.nav-cluster .up{grid-column:2;grid-row:6}.nav-cluster .left{grid-column:1;grid-row:7}.nav-cluster .down{grid-column:2;grid-row:7}.nav-cluster .right{grid-column:3;grid-row:7}
-.numpad-grid{display:grid;grid-template-columns:repeat(4,44px);grid-template-rows:repeat(5,44px);gap:6px;width:194px;min-width:194px;margin-top:58px}.numpad-grid .key{min-width:44px}.numpad-grid .num-plus{grid-column:4;grid-row:2 / span 2;height:94px}.numpad-grid .num-enter{grid-column:4;grid-row:4 / span 2;height:94px}.numpad-grid .num-zero{grid-column:1 / span 2;width:94px}.keyboard-layout-note{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.5}
-@media(max-width:860px){.tool-layout{grid-template-columns:1fr}.side{grid-row:auto}}
+.numpad-grid{display:grid;grid-template-columns:repeat(4,44px);grid-template-rows:repeat(5,44px);gap:6px;width:194px;min-width:194px;margin-top:58px}.numpad-grid .key{min-width:44px}.numpad-grid .num-plus{grid-column:4;grid-row:2 / span 2;height:94px}.numpad-grid .num-enter{grid-column:4;grid-row:4 / span 2;height:94px}.numpad-grid .num-zero{grid-column:1 / span 2;width:94px}.keyboard-layout-note,.mode-note{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.5}.fn-panel{display:none;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:#0c141e}.fn-panel.show{display:block}.fn-title{font-weight:800;margin-bottom:5px}.fn-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:10px}.fn-result{border:1px solid var(--line);border-radius:10px;padding:9px 6px;text-align:center;font-size:12px;font-weight:800;color:var(--muted)}.fn-result.active{background:var(--accent);border-color:var(--accent);color:#062217}.fn-source{margin-top:10px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);min-height:18px}
+@media(max-width:860px){.tool-layout{grid-template-columns:1fr}.side{grid-row:auto}.fn-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
-  const host=document.getElementById("keyboard");if(!host)return;
-  const text=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
-  const isKo=(document.documentElement.lang||"").toLowerCase().startsWith("ko");
-  const layoutKey="pc-checkup-keyboard-numpad-v1";
-  const functional=new Set(["Home","End","PageUp","PageDown","Insert","Delete","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);
-  const heldModifiers={Shift:null,Control:null,Alt:null,Meta:null};
-  const active=new Set(),releaseTimers=new Map();
-  let presses=0,repeats=0,unique=new Set(),maxSimul=0;
-
-  const update=()=>{text("pressCount",presses);text("repeatCount",repeats);text("uniqueCount",unique.size);text("maxSimul",maxSimul);};
-  const modifierFamily=e=>{
-    const key=e.key||"",code=e.code||"",kc=Number(e.keyCode)||0;
-    if(key==="Shift"||code.startsWith("Shift")||kc===16)return "Shift";
-    if(key==="Control"||code.startsWith("Control")||kc===17)return "Control";
-    if(key==="Alt"||key==="AltGraph"||code.startsWith("Alt")||kc===18)return "Alt";
-    if(key==="Meta"||key==="OS"||code.startsWith("Meta")||code.startsWith("OS")||kc===91||kc===92)return "Meta";
-    return "";
-  };
-  const resolve=e=>{
-    const key=e.key||"",raw=e.code||"",loc=Number(e.location)||Number(e.keyLocation)||0,kc=Number(e.keyCode)||0;
-    if(key==="HangulMode"||key==="Hangul"||kc===21)return "HangulMode";
-    if(key==="HanjaMode"||key==="Hanja"||kc===25)return "HanjaMode";
-    if(key==="PrintScreen"||raw==="PrintScreen"||raw==="Snapshot"||kc===44)return "PrintScreen";
-    if(functional.has(key))return key;
-    const family=modifierFamily(e);
-    if(family){
-      if(family==="Shift")return (raw==="ShiftRight"||loc===2)?"ShiftRight":"ShiftLeft";
-      if(family==="Control")return (raw==="ControlRight"||loc===2)?"ControlRight":"ControlLeft";
-      if(family==="Alt")return (raw==="AltRight"||loc===2)?"AltRight":"AltLeft";
-      if(family==="Meta")return (raw==="MetaRight"||raw==="OSRight"||loc===2||kc===92)?"MetaRight":"MetaLeft";
-    }
-    if(raw==="OSLeft")return "MetaLeft";
-    if(raw==="OSRight")return "MetaRight";
-    return raw;
-  };
-  const makeKey=(code,label,cls="")=>{const d=document.createElement("div");d.className=`key ${cls}`.trim();if(code)d.dataset.code=code;d.textContent=label;return d;};
-  const rows=[
-    [["Escape","Esc"],["","","spacer"],["F1","F1"],["F2","F2"],["F3","F3"],["F4","F4"],["","","spacer"],["F5","F5"],["F6","F6"],["F7","F7"],["F8","F8"],["","","spacer"],["F9","F9"],["F10","F10"],["F11","F11"],["F12","F12"]],
-    [["Backquote","`"],["Digit1","1"],["Digit2","2"],["Digit3","3"],["Digit4","4"],["Digit5","5"],["Digit6","6"],["Digit7","7"],["Digit8","8"],["Digit9","9"],["Digit0","0"],["Minus","-"],["Equal","="],["Backspace","Backspace","w2"]],
-    [["Tab","Tab","w15"],["KeyQ","Q"],["KeyW","W"],["KeyE","E"],["KeyR","R"],["KeyT","T"],["KeyY","Y"],["KeyU","U"],["KeyI","I"],["KeyO","O"],["KeyP","P"],["BracketLeft","["],["BracketRight","]"],["Backslash","\\","w15"]],
-    [["CapsLock","Caps","w175"],["KeyA","A"],["KeyS","S"],["KeyD","D"],["KeyF","F"],["KeyG","G"],["KeyH","H"],["KeyJ","J"],["KeyK","K"],["KeyL","L"],["Semicolon",";"],["Quote","'"],["Enter","Enter","w225"]],
-    [["ShiftLeft","Shift","w225"],["KeyZ","Z"],["KeyX","X"],["KeyC","C"],["KeyV","V"],["KeyB","B"],["KeyN","N"],["KeyM","M"],["Comma",","],["Period","."],["Slash","/"],["ShiftRight","Shift","w275"]]
-  ];
-  const ansiBottom=[["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["Space","Space","spacebar"],["AltRight","Alt","w125"],["MetaRight","Win","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]];
-  const koreanBottom=[["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["HanjaMode","\uD55C\uC790","w125 langkey"],["Space","Space","spacebar-ko"],["HangulMode","\uD55C/\uC601","w125 langkey"],["AltRight","Alt","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]];
-  const buildMain=()=>{const main=document.createElement("div");main.className="main-keyboard";[...rows,isKo?koreanBottom:ansiBottom].forEach((row,i)=>{const r=document.createElement("div");r.className="key-row"+(i===0?" function-row":"");row.forEach(([c,l,cl])=>r.appendChild(makeKey(c,l,cl)));main.appendChild(r);});return main;};
-  const buildNav=()=>{const nav=document.createElement("div");nav.className="nav-cluster";[["PrintScreen","PrtSc","prt"],["ScrollLock","ScrLk","scr"],["Pause","Pause","pause"],["Insert","Ins","ins"],["Home","Home","home"],["PageUp","PgUp","pgup"],["Delete","Del","del"],["End","End","end"],["PageDown","PgDn","pgdn"],["ArrowUp","↑","up"],["ArrowLeft","←","left"],["ArrowDown","↓","down"],["ArrowRight","→","right"]].forEach(([c,l,cl])=>nav.appendChild(makeKey(c,l,cl)));return nav;};
-  const buildNumpad=()=>{const pad=document.createElement("div");pad.className="numpad-grid";pad.id="numpadGrid";[["NumLock","Num"],["NumpadDivide","/"],["NumpadMultiply","*"],["NumpadSubtract","-"],["Numpad7","7"],["Numpad8","8"],["Numpad9","9"],["NumpadAdd","+","num-plus"],["Numpad4","4"],["Numpad5","5"],["Numpad6","6"],["Numpad1","1"],["Numpad2","2"],["Numpad3","3"],["NumpadEnter","Enter","num-enter"],["Numpad0","0","num-zero"],["NumpadDecimal","."]].forEach(([c,l,cl])=>pad.appendChild(makeKey(c,l,cl)));return pad;};
-
-  const board=document.createElement("div");board.className="keyboard-board";board.appendChild(buildMain());board.appendChild(buildNav());host.innerHTML="";host.appendChild(board);
-  const fitKeyboard=()=>{board.style.transform="none";const w=board.scrollWidth,h=board.scrollHeight,available=Math.max(1,host.clientWidth-4),scale=Math.min(1,available/w);board.style.transform=`scale(${scale})`;host.style.height=`${Math.ceil(h*scale+12)}px`;};
-  const applyLayout=mode=>{document.getElementById("numpadGrid")?.remove();if(mode==="with")board.appendChild(buildNumpad());document.querySelectorAll(".layout-btn").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));try{localStorage.setItem(layoutKey,mode);}catch{}requestAnimationFrame(fitKeyboard);};
-  const paint=(code,on)=>{if(!code)return;host.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.toggle("active",on));};
-  const release=code=>{if(!code)return;active.delete(code);paint(code,false);const t=releaseTimers.get(code);if(t)clearTimeout(t);releaseTimers.delete(code);};
-  const hold=code=>{if(!code)return;active.add(code);paint(code,true);const old=releaseTimers.get(code);if(old)clearTimeout(old);releaseTimers.set(code,setTimeout(()=>release(code),900));};
-  const flash=code=>{paint(code,true);setTimeout(()=>paint(code,false),320);};
-  const clearPressed=()=>{active.clear();releaseTimers.forEach(clearTimeout);releaseTimers.clear();Object.keys(heldModifiers).forEach(k=>heldModifiers[k]=null);host.querySelectorAll(".key.active").forEach(k=>k.classList.remove("active"));};
-
-  let mode="with";try{mode=localStorage.getItem(layoutKey)||"with";}catch{}if(mode!=="without")mode="with";applyLayout(mode);
-  document.querySelectorAll(".layout-btn").forEach(b=>b.addEventListener("click",()=>applyLayout(b.dataset.mode)));
-  window.addEventListener("resize",()=>requestAnimationFrame(fitKeyboard));
-  window.addEventListener("blur",clearPressed);window.addEventListener("pagehide",clearPressed);document.addEventListener("visibilitychange",()=>{if(document.hidden)clearPressed();});
-
-  const log=(e,resolved,suffix="")=>text("keyLog",`key: ${e.key} | code: ${e.code||"(none)"} | resolved: ${resolved||"unknown"} | location: ${e.location} | repeat: ${e.repeat?"yes":"no"}${suffix}`);
-  const onDown=e=>{
-    e.stopImmediatePropagation();
-    const resolved=resolve(e);if(!resolved)return;
-    if(["Tab","Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(resolved))e.preventDefault();
-    const family=modifierFamily(e);if(family)heldModifiers[family]=resolved;
-    if(e.repeat)repeats++;else{presses++;unique.add(resolved);active.add(resolved);maxSimul=Math.max(maxSimul,active.size);}
-    hold(resolved);log(e,resolved);update();
-  };
-  const onUp=e=>{
-    e.stopImmediatePropagation();
-    const family=modifierFamily(e);
-    if(family&&heldModifiers[family]){const resolved=heldModifiers[family];heldModifiers[family]=null;release(resolved);log(e,resolved);return;}
-    const resolved=resolve(e);if(!resolved)return;
-    if(resolved==="PrintScreen"&&!active.has(resolved)){presses++;unique.add(resolved);flash(resolved);log(e,resolved," | keyup-only");update();return;}
-    release(resolved);log(e,resolved);
-  };
-  window.addEventListener("keydown",onDown,{capture:true,passive:false});
-  window.addEventListener("keyup",onUp,{capture:true});
-  document.getElementById("resetKeyboard")?.addEventListener("click",()=>{presses=0;repeats=0;unique.clear();maxSimul=0;clearPressed();text("keyLog","");update();});
-  update();
+ const host=document.getElementById("keyboard");if(!host)return;
+ const isKo=(document.documentElement.lang||"").toLowerCase().startsWith("ko");
+ const layoutKey="pc-checkup-keyboard-numpad-v1";
+ let mode="base",presses=0,repeats=0,unique=new Set(),current=new Set(),maxSimul=0;
+ const releaseTimers=new Map(),downByPhysical=new Map();
+ const text=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+ const update=()=>{text("pressCount",presses);text("repeatCount",repeats);text("uniqueCount",unique.size);text("maxSimul",maxSimul);};
+ const makeKey=(code,label,cls="")=>{const d=document.createElement("div");d.className=`key ${cls}`.trim();if(code)d.dataset.code=code;d.textContent=label;return d;};
+ const rows=[
+  [["Escape","Esc"],["","","spacer"],["F1","F1"],["F2","F2"],["F3","F3"],["F4","F4"],["","","spacer"],["F5","F5"],["F6","F6"],["F7","F7"],["F8","F8"],["","","spacer"],["F9","F9"],["F10","F10"],["F11","F11"],["F12","F12"]],
+  [["Backquote","`"],["Digit1","1"],["Digit2","2"],["Digit3","3"],["Digit4","4"],["Digit5","5"],["Digit6","6"],["Digit7","7"],["Digit8","8"],["Digit9","9"],["Digit0","0"],["Minus","-"],["Equal","="],["Backspace","Backspace","w2"]],
+  [["Tab","Tab","w15"],["KeyQ","Q"],["KeyW","W"],["KeyE","E"],["KeyR","R"],["KeyT","T"],["KeyY","Y"],["KeyU","U"],["KeyI","I"],["KeyO","O"],["KeyP","P"],["BracketLeft","["],["BracketRight","]"],["Backslash","\\","w15"]],
+  [["CapsLock","Caps","w175"],["KeyA","A"],["KeyS","S"],["KeyD","D"],["KeyF","F"],["KeyG","G"],["KeyH","H"],["KeyJ","J"],["KeyK","K"],["KeyL","L"],["Semicolon",";"],["Quote","'"],["Enter","Enter","w225"]],
+  [["ShiftLeft","Shift","w225"],["KeyZ","Z"],["KeyX","X"],["KeyC","C"],["KeyV","V"],["KeyB","B"],["KeyN","N"],["KeyM","M"],["Comma",","],["Period","."],["Slash","/"],["ShiftRight","Shift","w275"]]
+ ];
+ const ansiBottom=[["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["Space","Space","spacebar"],["AltRight","Alt","w125"],["MetaRight","Win","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]];
+ const koreanBottom=[["ControlLeft","Ctrl","w125"],["MetaLeft","Win","w125"],["AltLeft","Alt","w125"],["HanjaMode","\uD55C\uC790","w125 langkey"],["Space","Space","spacebar-ko"],["HangulMode","\uD55C/\uC601","w125 langkey"],["AltRight","Alt","w125"],["ContextMenu","Menu","w125"],["ControlRight","Ctrl","w125"]];
+ const buildMain=()=>{const main=document.createElement("div");main.className="main-keyboard";[...rows,isKo?koreanBottom:ansiBottom].forEach((row,i)=>{const r=document.createElement("div");r.className="key-row"+(i===0?" function-row":"");row.forEach(([c,l,cl])=>r.appendChild(makeKey(c,l,cl)));main.appendChild(r);});return main;};
+ const buildNav=()=>{const nav=document.createElement("div");nav.className="nav-cluster";[["PrintScreen","PrtSc","prt"],["ScrollLock","ScrLk","scr"],["Pause","Pause","pause"],["Insert","Ins","ins"],["Home","Home","home"],["PageUp","PgUp","pgup"],["Delete","Del","del"],["End","End","end"],["PageDown","PgDn","pgdn"],["ArrowUp","↑","up"],["ArrowLeft","←","left"],["ArrowDown","↓","down"],["ArrowRight","→","right"]].forEach(([c,l,cl])=>nav.appendChild(makeKey(c,l,cl)));return nav;};
+ const buildNumpad=()=>{const pad=document.createElement("div");pad.className="numpad-grid";pad.id="numpadGrid";[["NumLock","Num"],["NumpadDivide","/"],["NumpadMultiply","*"],["NumpadSubtract","-"],["Numpad7","7"],["Numpad8","8"],["Numpad9","9"],["NumpadAdd","+","num-plus"],["Numpad4","4"],["Numpad5","5"],["Numpad6","6"],["Numpad1","1"],["Numpad2","2"],["Numpad3","3"],["NumpadEnter","Enter","num-enter"],["Numpad0","0","num-zero"],["NumpadDecimal","."]].forEach(([c,l,cl])=>pad.appendChild(makeKey(c,l,cl)));return pad;};
+ const board=document.createElement("div");board.className="keyboard-board";board.appendChild(buildMain());board.appendChild(buildNav());host.innerHTML="";host.appendChild(board);
+ const fitKeyboard=()=>{board.style.transform="none";const w=board.scrollWidth,h=board.scrollHeight,available=Math.max(1,host.clientWidth-4),scale=Math.min(1,available/w);board.style.transform=`scale(${scale})`;host.style.height=`${Math.ceil(h*scale+12)}px`;};
+ const applyLayout=which=>{document.getElementById("numpadGrid")?.remove();if(which==="with")board.appendChild(buildNumpad());document.querySelectorAll(".layout-btn").forEach(b=>b.classList.toggle("active",b.dataset.mode===which));try{localStorage.setItem(layoutKey,which);}catch{}requestAnimationFrame(fitKeyboard);};
+ const rawPhysical=e=>{
+   const key=e.key||"",code=e.code||"",loc=Number(e.location)||Number(e.keyLocation)||0,kc=Number(e.keyCode)||0;
+   if(key==="HangulMode"||key==="Hangul"||kc===21)return "HangulMode";
+   if(key==="HanjaMode"||key==="Hanja"||kc===25)return "HanjaMode";
+   if(key==="PrintScreen"||code==="PrintScreen"||code==="Snapshot"||kc===44)return "PrintScreen";
+   if(code==="OSLeft")return "MetaLeft";if(code==="OSRight")return "MetaRight";
+   if(code)return code;
+   if(key==="Shift")return loc===2?"ShiftRight":"ShiftLeft";
+   if(key==="Control")return loc===2?"ControlRight":"ControlLeft";
+   if(key==="Alt"||key==="AltGraph")return loc===2?"AltRight":"AltLeft";
+   if(key==="Meta"||key==="OS")return loc===2?"MetaRight":"MetaLeft";
+   return "";
+ };
+ const fnFunctions=new Set(["Insert","Delete","Home","End","PageUp","PageDown"]);
+ const paint=(code,on)=>{if(!code)return;host.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.toggle("active",on));};
+ const paintFn=(name,on)=>{document.querySelectorAll(`[data-fn="${CSS.escape(name)}"]`).forEach(k=>k.classList.toggle("active",on));};
+ const releasePhysical=code=>{if(!code)return;current.delete(code);paint(code,false);const t=releaseTimers.get(code);if(t)clearTimeout(t);releaseTimers.delete(code);};
+ const armRelease=code=>{if(!code)return;const old=releaseTimers.get(code);if(old)clearTimeout(old);releaseTimers.set(code,setTimeout(()=>releasePhysical(code),900));};
+ const clearPressed=()=>{current.clear();downByPhysical.clear();releaseTimers.forEach(clearTimeout);releaseTimers.clear();host.querySelectorAll(".key.active").forEach(k=>k.classList.remove("active"));document.querySelectorAll(".fn-result.active").forEach(k=>k.classList.remove("active"));};
+ const setMode=next=>{mode=next;clearPressed();document.querySelectorAll(".mode-btn").forEach(b=>b.classList.toggle("active",b.dataset.testmode===next));document.getElementById("fnPanel")?.classList.toggle("show",next==="fn");text("keyLog",next==="fn"?"Fn secondary mode: hold Fn and press the secondary key.":"Base key mode: press keys normally.");};
+ const recordDown=e=>{
+   const physical=rawPhysical(e);if(!physical)return;
+   if(["Tab","Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(e.key))e.preventDefault();
+   if(e.repeat)repeats++;else{presses++;unique.add(physical);current.add(physical);maxSimul=Math.max(maxSimul,current.size);}
+   downByPhysical.set(physical,physical);paint(physical,true);armRelease(physical);
+   if(mode==="fn"&&fnFunctions.has(e.key||"")){paintFn(e.key,true);text("fnSource",`physical: ${physical}  →  Fn result: ${e.key}`);}else if(mode==="fn"){text("fnSource",`physical: ${physical}  →  result: ${e.key||"(none)"}`);}
+   text("keyLog",`mode: ${mode} | key: ${e.key} | code: ${e.code||"(none)"} | physical: ${physical} | location: ${e.location} | repeat: ${e.repeat?"yes":"no"}`);update();
+ };
+ const recordUp=e=>{
+   const physical=rawPhysical(e);if(physical)releasePhysical(physical);
+   if(mode==="fn"&&fnFunctions.has(e.key||""))paintFn(e.key,false);
+   if((e.key==="PrintScreen"||e.code==="PrintScreen")&&!physical){paint("PrintScreen",true);setTimeout(()=>paint("PrintScreen",false),320);}
+ };
+ let layout="with";try{layout=localStorage.getItem(layoutKey)||"with";}catch{}if(layout!=="without")layout="with";applyLayout(layout);
+ document.querySelectorAll(".layout-btn").forEach(b=>b.addEventListener("click",()=>applyLayout(b.dataset.mode)));
+ document.querySelectorAll(".mode-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.testmode)));
+ window.addEventListener("resize",()=>requestAnimationFrame(fitKeyboard));window.addEventListener("blur",clearPressed);window.addEventListener("pagehide",clearPressed);document.addEventListener("visibilitychange",()=>{if(document.hidden)clearPressed();});
+ window.addEventListener("keydown",recordDown,{capture:true,passive:false});window.addEventListener("keyup",recordUp,{capture:true});
+ document.getElementById("resetKeyboard")?.addEventListener("click",()=>{presses=0;repeats=0;unique.clear();current.clear();maxSimul=0;clearPressed();text("keyLog","");text("fnSource","");update();});
+ setMode("base");update();
 });
 </script>
 </head><body>
@@ -106,6 +85,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 <main><section class="tool-head"><div class="wrap"><span class="eyebrow">입력 장치</span><h1>키보드 테스트</h1><p class="section-intro">키를 하나씩 눌러 인식 여부를 확인하고, 여러 키를 동시에 눌러 동시입력도 확인하세요.</p></div></section>
 <div class="wrap tool-layout"><section class="toolbox"><div class="statrow four"><div class="stat"><span>실제 눌림 시작</span><b id="pressCount">0</b></div><div class="stat"><span>OS 자동반복</span><b id="repeatCount">0</b></div><div class="stat"><span>서로 다른 키</span><b id="uniqueCount">0</b></div><div class="stat"><span>최대 동시입력</span><b id="maxSimul">0</b></div></div>
 <div class="keyboard-layout-toggle"><button type="button" class="layout-btn" data-mode="with">Full-size · Numpad</button><button type="button" class="layout-btn" data-mode="without">TKL · No Numpad</button></div><p class="keyboard-layout-note">Common ANSI-style layout. Korean 106-key and other regional keyboards may have extra or differently shaped keys.</p>
+<div class="keyboard-test-mode"><button type="button" class="mode-btn active" data-testmode="base">Base keys</button><button type="button" class="mode-btn" data-testmode="fn">Fn secondary</button></div><p class="mode-note">Base keys checks the physical key itself. Fn secondary is a separate test mode for secondary Home / End / Page Up / Page Down / Insert / Delete functions. The browser may not expose the Fn key itself.</p>
 <div id="keyboard" class="keyboard"></div>
+<div id="fnPanel" class="fn-panel"><div class="fn-title">Fn secondary results</div><div class="mode-note">Switch to this mode, hold Fn on your keyboard, then press the key that carries the secondary function.</div><div class="fn-grid"><div class="fn-result" data-fn="Insert">Insert</div><div class="fn-result" data-fn="Home">Home</div><div class="fn-result" data-fn="PageUp">Page Up</div><div class="fn-result" data-fn="Delete">Delete</div><div class="fn-result" data-fn="End">End</div><div class="fn-result" data-fn="PageDown">Page Down</div></div><div id="fnSource" class="fn-source"></div></div>
 <div id="keyLog" class="eventlog">키를 눌러보세요.</div><div class="controls"><button id="resetKeyboard" class="btn">초기화</button></div></section><aside class="side"><div class="notice"><strong>확인 방법</strong><br>모든 키가 눌릴 때 초록색으로 반응하는지 봅니다. 키를 길게 누르면 운영체제의 정상 자동반복이 별도 집계됩니다. 손을 뗀 뒤에도 입력이 계속되는 현상은 별도로 확인하세요.</div><a class="btn primary" href="checkup.html">전체 점검으로 돌아가기</a></aside></div></main>
 <footer><div class="wrap">브라우저 안에서 바로 점검합니다. 카메라·마이크·키 입력은 서버로 전송하지 않는 구조를 기본으로 합니다.</div></footer></body></html>
