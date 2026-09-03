@@ -33,8 +33,8 @@ jobs:
           python tools/build_global_runtime.py
           rm tools/build_global_runtime.py
           python tools/expand_batch2.py
-          python tools/normalize_generated_keyboard.py
           python tools/append_cn_ru.py
+          python tools/normalize_generated_keyboard.py
       - name: Validate localized artifact
         run: python tools/validate_dist.py
       - name: Upload artifact
