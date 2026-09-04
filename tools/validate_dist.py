@@ -3,8 +3,11 @@ import re
 import subprocess
 import tempfile
 import sys
+import os
 
 ROOT = Path('dist')
+PROD_ORIGIN = 'https://pc-checkup.pages.dev'
+OLD_ORIGIN = 'https://gsh4124-cyber.github.io/pc-checkup'
 PAGES = ['index.html','checkup.html','mobile.html','keyboard.html','mouse.html','mic.html','webcam.html','speaker.html','display.html']
 LOCALES = ['ko','en','ja','es','de','fr','pt','it','nl','id','vi','zh-CN','ru']
 DIRS = {'ko': ROOT, **{x: ROOT/x for x in LOCALES if x != 'ko'}}
@@ -13,6 +16,17 @@ errors = []
 
 def err(path, kind, detail=''):
     errors.append(f'{path}: {kind}{": " + detail if detail else ""}')
+
+# Cloudflare Pages exposes the source revision in CF_PAGES_COMMIT_SHA. Persist it
+# into the deployed artifact so production QA can prove it is testing the exact
+# commit that Cloudflare published. GitHub Pages writes its own marker later in
+# its workflow, so this is safe in both environments.
+cf_revision = os.environ.get('CF_PAGES_COMMIT_SHA', '').strip()
+if cf_revision:
+    if not re.fullmatch(r'[0-9a-f]{40}', cf_revision):
+        err('build-revision.txt', 'invalid CF_PAGES_COMMIT_SHA', cf_revision)
+    else:
+        (ROOT/'build-revision.txt').write_text(cf_revision + '\n', encoding='utf-8')
 
 # Required 13 languages × 9 HTML pages.
 for lang, folder in DIRS.items():
@@ -24,23 +38,33 @@ html_files = sorted(ROOT.rglob('*.html'))
 if len(html_files) != 117:
     err('dist', 'HTML count', f'expected 117, got {len(html_files)}')
 
-# Sitemap must contain exactly one URL per indexable HTML page.
+# Sitemap must contain exactly one URL per indexable HTML page and use the
+# Cloudflare production origin only.
 sitemap = (ROOT/'sitemap.xml').read_text(encoding='utf-8') if (ROOT/'sitemap.xml').exists() else ''
 loc_count = sitemap.count('<loc>')
 if loc_count != 117:
     err('sitemap.xml', 'URL count', f'expected 117, got {loc_count}')
+if OLD_ORIGIN in sitemap:
+    err('sitemap.xml', 'old GitHub Pages origin present')
+for loc in re.findall(r'<loc>([^<]+)</loc>', sitemap):
+    if not loc.startswith(PROD_ORIGIN + '/'):
+        err('sitemap.xml', 'non-production URL', loc)
+
+robots = (ROOT/'robots.txt').read_text(encoding='utf-8') if (ROOT/'robots.txt').exists() else ''
+if f'Sitemap: {PROD_ORIGIN}/sitemap.xml' not in robots:
+    err('robots.txt', 'production sitemap reference missing')
+if OLD_ORIGIN in robots:
+    err('robots.txt', 'old GitHub Pages origin present')
 
 for path in html_files:
     rel = path.relative_to(ROOT)
     text = path.read_text(encoding='utf-8')
 
-    # Duplicate IDs.
     ids = re.findall(r'\bid="([^"]+)"', text)
     dup = sorted({x for x in ids if ids.count(x) > 1})
     if dup:
         err(str(rel), 'duplicate IDs', ', '.join(dup))
 
-    # Internal href/src references.
     for attr, value in re.findall(r'\b(href|src)="([^"]+)"', text):
         if not value or value.startswith(('http://','https://','#','mailto:','tel:','data:','javascript:')):
             continue
@@ -55,20 +79,22 @@ for path in html_files:
         if not target.exists():
             err(str(rel), 'missing internal reference', value)
 
-    # SEO structure required on every indexable page.
     if 'rel="canonical"' not in text:
         err(str(rel), 'missing canonical')
     if 'hreflang="x-default"' not in text:
         err(str(rel), 'missing x-default hreflang')
+    if OLD_ORIGIN in text:
+        err(str(rel), 'old GitHub Pages origin present')
 
-    # No accidental raw Korean text in non-Korean generated pages except the
-    # intentional language-selector label 한국어.
+    canon = re.search(r'<link[^>]+rel="canonical"[^>]+href="([^"]+)"', text, re.I)
+    if canon and not canon.group(1).startswith(PROD_ORIGIN + '/'):
+        err(str(rel), 'canonical not on production origin', canon.group(1))
+
     if rel.parts and rel.parts[0] in {x for x in LOCALES if x != 'ko'}:
         clean = text.replace('한국어','')
         if re.search(r'[가-힣]', clean):
             err(str(rel), 'KOREAN_LEAK')
 
-    # Inline JavaScript syntax. Ignore JSON-LD scripts.
     scripts = []
     for m in re.finditer(r'<script([^>]*)>(.*?)</script>', text, re.S|re.I):
         attrs, body = m.group(1), m.group(2)
@@ -87,13 +113,11 @@ for path in html_files:
         if result.returncode:
             err(str(rel), 'inline JS syntax', result.stderr.splitlines()[0] if result.stderr else 'node --check failed')
 
-# External JS files syntax across all locales.
 for path in sorted(list(ROOT.rglob('app.js')) + list(ROOT.rglob('mobile.js'))):
     result = subprocess.run(['node','--check',str(path)],capture_output=True,text=True)
     if result.returncode:
         err(str(path.relative_to(ROOT)), 'JS syntax', result.stderr.splitlines()[0] if result.stderr else 'node --check failed')
 
-# Keyboard regression invariants.
 for lang, folder in DIRS.items():
     path = folder/'keyboard.html'
     if not path.exists():
@@ -112,8 +136,6 @@ for lang, folder in DIRS.items():
     ]:
         if required not in text:
             err(rel, 'keyboard invariant missing', required)
-    # Fn must remain a combination/evidence check: no red/fault verdict and the
-    # unavailable state must explicitly avoid calling the keyboard broken.
     for forbidden in ['ShiftUnknown','shiftArm','initKeyboard','fn-evidence faulty','fn-evidence failed']:
         if re.search(rf'\b{re.escape(forbidden)}\b', text):
             err(rel, 'obsolete or unsafe keyboard path present', forbidden)
@@ -124,7 +146,6 @@ for lang, folder in DIRS.items():
             if phrase not in text:
                 err(rel, 'Korean keyboard UX invariant missing', phrase)
 
-# Reserved ad slots: exactly one on the three non-invasive surfaces per locale.
 for lang, folder in DIRS.items():
     for page in ['index.html','checkup.html','mobile.html']:
         text = (folder/page).read_text(encoding='utf-8')
@@ -135,8 +156,6 @@ for lang, folder in DIRS.items():
         if 'data-ad-slot=' in text:
             err(str((folder/page).relative_to(ROOT)), 'ad slot inside individual test')
 
-# No runtime network/analytics/ad code yet. Reserved slots must stay inert until
-# an ad provider is intentionally integrated.
 for path in list(ROOT.rglob('*.js')) + html_files:
     text = path.read_text(encoding='utf-8')
     for token in ['XMLHttpRequest','WebSocket','sendBeacon','googletagmanager','google-analytics','adsbygoogle']:
@@ -148,4 +167,4 @@ if errors:
     print(f'Validation failed: {len(errors)} issue(s)')
     sys.exit(2)
 
-print(f'Validation PASS: {len(html_files)} HTML, {loc_count} sitemap URLs, {len(LOCALES)} locales, keyboard Fn/modifier evidence invariants PASS')
+print(f'Validation PASS: {len(html_files)} HTML, {loc_count} sitemap URLs, {len(LOCALES)} locales, Cloudflare production origin and keyboard Fn/modifier evidence invariants PASS')
