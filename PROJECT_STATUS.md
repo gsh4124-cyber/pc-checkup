@@ -1,6 +1,6 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
-- 마지막 갱신: 2026-09-03
+- 마지막 갱신: 2026-09-04
 - 상태: **POC / PUBLIC DEPLOYED / GLOBAL 13-LANGUAGE DEPLOYED / AUTOMATED ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / EXACT-REVISION MULTI-ENGINE PRODUCTION QA PASS / PHYSICAL DEVICE & REAL-BROWSER QA PENDING**
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 공개 URL: `https://gsh4124-cyber.github.io/pc-checkup/`
@@ -29,6 +29,7 @@ PC 6종:
 - 브라우저가 신뢰성 있게 측정 가능한 신호만 자동 판정한다.
 - 화면 결함, 실제 청취, 진동 체감, 카메라 화질 등 사람의 감각이 필요한 항목은 수동 판정을 유지한다.
 - 권한 거부·브라우저 미지원만으로 하드웨어 고장 판정을 하지 않는다.
+- **브라우저가 볼 수 없는 것을 고장으로 판정하지 않는다.**
 
 ## 현재 배포
 
@@ -61,14 +62,58 @@ PC 6종:
 - Shift / Ctrl / Alt / Meta modifier 판별을 공통 규칙으로 통일
 - 우선순위: `event.code` → `event.location` → 최소 fallback
 - `ShiftUnknown`, 화면에서 Shift 선선택, 구형 `initKeyboard()` 경로 제거
-- Fn은 자동 추론만 사용하지 않고 명시적 `Fn check` + `fnArmed` 상태 복원
-- Fn check ON에서 Home / End / PageUp / PageDown / Insert / Delete 보조출력을 별도 확인
 - fullscreen 검사 유지
 - Keyboard Lock은 검사 흐름 방해 키를 선택적으로 차단
 - Windows 시작키 대응을 위해 `MetaLeft / MetaRight`도 fullscreen lock 대상에 포함
 - stuck-key 안전 해제 유지
 
-실제 Left/Right Shift 최종 물리 QA는 다른 PC에서 재확인 예정.
+## 2026-09-04 키보드/Fn 최종 UX·판정 구조
+
+황제 실기기 테스트에서 일부 키보드는 오른쪽 modifier의 `code/location`을 브라우저에 제공하지 않고, 일부 Fn 조합은 Fn 전후 완전히 같은 이벤트를 전달하는 것이 확인됐다.
+
+최종 원칙:
+- Fn은 독립 키 검사로 표현하지 않고 **키보드 테스트 안의 `Fn 조합 확인` 보조기능**으로 둔다.
+- 절차: 같은 물리키를 `Fn 없이 1회 → Fn과 함께 1회` 입력해 브라우저 관찰값을 비교한다.
+- Fn 결과 상태:
+  - 초록: **Fn 조합 확인됨** — 직접 Fn 신호 또는 Fn 전후 다른 브라우저 이벤트가 관찰됨
+  - 파랑: **웹에서 판정 불가** — Fn 전후 이벤트가 동일함. **키보드 고장을 의미하지 않음**
+  - 주황: **재확인 필요** — 관찰 가능한 조건에서 반복 확인이 필요한 경우에만 사용
+  - Fn에 빨강 `고장` 판정은 사용하지 않음
+- 내부 evidence는 Fn `direct / indirect`를 구분한다.
+- Shift / Ctrl / Alt / Win 좌우 입력은 내부적으로 `direct`와 `assisted`를 구분한다.
+- 한쪽 modifier만 브라우저가 직접 식별하는 경우, 그 한쪽을 실제 확인한 뒤 반대쪽만 보조 판정할 수 있다. 근거 없는 좌우 번갈아 추정은 금지한다.
+- 긴 안내는 기본 접힘으로 두어 테스트 작업 공간을 방해하지 않도록 한다.
+
+## 2026-09-04 전수 재검사 및 배포
+
+최종 키보드/Fn 구조 확정 후 `tools/validate_dist.py`를 강화해 최신 회귀 방지 조건을 13개 언어 키보드 artifact 전체에 적용했다.
+
+추가 검증 invariant:
+- `Fn 조합 확인` 상태 엔진 존재
+- `confirmed / unavailable / recheck` 결과 팔레트 존재
+- Fn 판정 불가 상태가 고장으로 표현되지 않음
+- modifier evidence `direct / assisted` 분리
+- 구형 `ShiftUnknown / shiftArm / initKeyboard` 경로 부재
+- 접이식 키보드 도움말 유지
+- 한국어에서 `Fn 조합 확인 / 키보드 고장을 의미하지 않습니다 / 문제가 있을 때만 보기` 핵심 UX 문구 존재
+
+1차 강화 run `122`는 validator가 실제 산출물에 없는 선택적 `side-help` 클래스를 필수로 가정한 **검사 규칙 자체의 오탐**으로 배포 차단됐다. 제품 artifact 오류는 아니었고, 해당 잘못된 invariant를 제거한 뒤 재실행했다.
+
+최종 검증 기준:
+- commit: `ef4ff4c6a7aac81021d4558309cb19da79be23f1`
+- Pages deploy run `123`: `33838682775` — **SUCCESS**
+- Source Guardrails — SUCCESS
+- Build + Artifact QA — SUCCESS
+- `117 HTML / 117 sitemap URLs / 13 locales` 전체 검증 — SUCCESS
+- Combined Quality Gate — SUCCESS
+- Deploy Pages — SUCCESS
+- Production Browser Smoke run `33838682765`
+  - Chromium — SUCCESS
+  - Firefox — SUCCESS
+  - WebKit — SUCCESS
+  - 세 엔진 모두 exact deployed revision 확인 후 공개본 QA 성공
+
+따라서 현재 최종 배포본은 **정적 artifact 전수검사 + 실제 공개 revision 다중엔진 QA까지 PASS** 상태다.
 
 ## 2026-09-03 전수 Artifact QA
 
@@ -154,14 +199,6 @@ PC 6종:
 
 6시간 주기 heartbeat는 비용·시간을 줄이기 위해 Chromium만 실행한다.
 
-최종 검증:
-- Pages deploy run `33752636144`: **SUCCESS**
-- Production Browser Smoke run `33752636269`: **SUCCESS**
-- `Production QA · Chromium`: SUCCESS
-- `Production QA · firefox`: SUCCESS
-- `Production QA · webkit`: SUCCESS
-- 세 job 모두 `Wait for exact deployed revision`: SUCCESS
-
 현재 공개 QA 범위:
 - 현재 commit과 실제 공개 배포 revision 일치
 - sitemap 117 URL 실제 접근
@@ -215,10 +252,10 @@ PC:
 자동 엔진 QA와 실제 하드웨어·실제 기기 PASS를 구분한다.
 
 필수 남은 QA:
-- 다른 PC에서 Left Shift / Right Shift 실제 분리 확인
-- Left/Right Ctrl, Alt 재확인
+- 다른 PC에서 Left/Right Shift, Ctrl, Alt, Win 실제 분리 재확인
+- 보조 판정(`assisted`)이 필요한 키보드 유형 추가 실기기 확인
 - fullscreen에서 Windows 시작키 차단 실제 확인
-- Fn check ON/OFF 실제 노트북 보조키 확인
+- Fn 조합 확인을 여러 노트북·소형 키보드에서 실기기 재검증
 - F1~F12 / Esc / 방향키 / Home-End 계열 browser interference 확인
 - focus loss 후 stuck key 없음 확인
 - 마우스 실제 1클릭=1카운트 확인
@@ -241,9 +278,10 @@ PC:
 - Red Team: PASS WITH FIXES
 - 공개 exact-revision Production QA: **PASS WITH FIXES**
 - 자동 Chromium / Firefox / WebKit: **PASS**
+- 키보드/Fn 최신 artifact invariant: **PASS**
 - 광고 슬롯 준비: PASS (실광고 미연결)
-- 실제 PC 물리 QA: PENDING
+- 실제 PC 물리 QA: PARTIAL / 추가 기기 PENDING
 - 실제 모바일·브라우저·하드웨어 QA: PENDING
 - 검색/시장 현실검증: PENDING
 
-다음 Gate는 **실제 PC 물리 QA + 실제 Android/iPhone/브라우저 하드웨어 상호작용 QA**다. 이후 광고 provider 연결/AdSense Gate, 검색유통, 실제 사용·시장 데이터를 분리해 진행한다.
+다음 Gate는 **추가 실제 PC 물리 QA + 실제 Android/iPhone/브라우저 하드웨어 상호작용 QA**다. 이후 광고 provider 연결/AdSense Gate, 검색유통, 실제 사용·시장 데이터를 분리해 진행한다.
