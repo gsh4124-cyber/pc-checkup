@@ -34,6 +34,7 @@ jobs:
           python -m py_compile \
             tools/expand_batch2.py \
             tools/append_cn_ru.py \
+            tools/normalize_generated_structure.py \
             tools/normalize_generated_keyboard.py \
             tools/inject_language_ux.py \
             tools/localize_korean_ui.py \
@@ -42,7 +43,7 @@ jobs:
       - name: Check required source files
         run: |
           set -e
-          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_keyboard.py tools/inject_language_ux.py tools/localize_korean_ui.py tools/validate_dist.py; do
+          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_structure.py tools/normalize_generated_keyboard.py tools/inject_language_ux.py tools/localize_korean_ui.py tools/validate_dist.py; do
             test -s "$file"
           done
 
@@ -65,6 +66,7 @@ jobs:
           rm tools/build_global_runtime.py
           python tools/expand_batch2.py
           python tools/append_cn_ru.py
+          python tools/normalize_generated_structure.py
           python tools/normalize_generated_keyboard.py
           python tools/inject_language_ux.py
           python tools/localize_korean_ui.py
@@ -82,15 +84,15 @@ jobs:
           for p in pages:
               t=p.read_text(encoding='utf-8')
               assert 'id="languagePicker"' in t, p
-              assert 'language-ux-v3' in t, p
-              assert 'ui-polish-v2' in t, p
+              assert 'language-ux-v4' in t, p
+              assert 'ui-polish-v3' in t, p
               assert 'data-locale=' in t, p
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX and shared UI polish present on all 117 pages; Korean keyboard prose localized; build revision={revision}')
+          print(f'Language UX, restored DOM structure, and shared UI polish present on all 117 pages; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
