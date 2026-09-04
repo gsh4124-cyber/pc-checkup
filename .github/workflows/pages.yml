@@ -118,15 +118,21 @@ jobs:
               assert t.count('class="btn screen-color"')==8, (p, t.count('class="btn screen-color"'))
               for color in ['#ffffff','#000000','#ff0000','#00ff00','#0000ff','#808080','#ffff00','#00ffff']:
                   assert t.count(f'data-color="{color}"')>=2, (p, color)
+              labels=re.findall(r'<button class="color-btn"[^>]*>([^<]+)</button>',t)
+              assert len(labels)==8 and all(x.strip() for x in labels),(p,labels)
           mobiles=[Path('dist/mobile.html'), *sorted(Path('dist').glob('*/mobile.html'))]
           assert len(mobiles)==13, len(mobiles)
           for p in mobiles:
               t=p.read_text(encoding='utf-8')
               assert t.count('data-open-screen=')==8, (p, t.count('data-open-screen='))
               assert t.count('data-set-screen=')==8, (p, t.count('data-set-screen='))
+              open_labels=re.findall(r'<button class="btn" data-open-screen="[^"]+">([^<]+)</button>',t)
+              set_labels=re.findall(r'<button data-set-screen="[^"]+">([^<]+)</button>',t)
+              assert len(open_labels)==8 and all(x.strip() for x in open_labels),(p,open_labels)
+              assert len(set_labels)==8 and all(x.strip() for x in set_labels),(p,set_labels)
           ko_display=Path('dist/display.html').read_text(encoding='utf-8')
           ko_mobile=Path('dist/mobile.html').read_text(encoding='utf-8')
-          for label in ['회색','노랑','청록']:
+          for label in ['흰색','검정','빨강','초록','파랑','회색','노랑','청록']:
               assert label in ko_display, label
               assert label in ko_mobile, label
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
@@ -134,7 +140,7 @@ jobs:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX, responsive readability, visible sidebar help consistency, 8-color display parity, and canonical PC navigation order present on all required pages; build revision={revision}')
+          print(f'Language UX, responsive readability, visible sidebar help consistency, 8-color label parity, and canonical PC navigation order present on all required pages; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
