@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path('dist')
 
@@ -45,6 +46,21 @@ for path in root_pages:
         text = text.replace('Exit keyboard test', '키보드 테스트 종료')
         text = text.replace('browser-visible secondary result', '브라우저에서 확인 가능한 보조 출력')
         text = text.replace('inferred from verified opposite Shift', '확인된 반대쪽 Shift를 기준으로 추론')
+    path.write_text(text, encoding='utf-8')
+
+# Shared keyboard runtime contains Korean fallbacks for the root page. Encode only
+# Hangul inside that runtime on non-Korean locale pages so the behavior stays the
+# same without leaking Korean text into localized artifacts.
+def escape_runtime_hangul(text: str) -> str:
+    pattern = re.compile(r'<script>\s*/\* keyboard-runtime-helper-v[0-9]+ \*/[\s\S]*?</script>')
+    def repl(match):
+        block = match.group(0)
+        return ''.join(f'\\u{ord(ch):04x}' if '\uac00' <= ch <= '\ud7a3' else ch for ch in block)
+    return pattern.sub(repl, text, count=1)
+
+for path in sorted(ROOT.glob('*/keyboard.html')):
+    text = path.read_text(encoding='utf-8')
+    text = escape_runtime_hangul(text)
     path.write_text(text, encoding='utf-8')
 
 # Guard the Korean keyboard against the exact accidental English UI phrases that
