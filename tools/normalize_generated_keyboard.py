@@ -24,20 +24,32 @@ def normalize_markup(text: str) -> str:
 def polish_fullscreen_ui(text: str) -> str:
     override = '''
 <style>
-/* keyboard-fullscreen-ui-v5 */
+/* keyboard-fullscreen-ui-v6 */
 .keyboard-test-active .fullscreen-exit{top:22px!important;right:24px!important;min-width:72px;min-height:46px;padding:11px 18px!important;border-radius:14px!important;box-shadow:0 8px 26px rgba(0,0,0,.28)}
 .keyboard-test-active .tool-layout{padding-top:18px!important;padding-right:112px!important}
-.keyboard-note{font-size:14px!important;line-height:1.7!important;max-width:1100px;color:#9fb0c3!important}
-.printscreen-fn-note{margin-top:4px!important;padding:10px 12px;border-left:3px solid var(--accent);background:rgba(111,229,189,.05);border-radius:8px}
-.side .notice{font-size:15px!important;line-height:1.75!important;padding:18px!important}
-.side .notice strong{display:block;font-size:17px;margin-bottom:6px}
+.keyboard-note{font-size:14px!important;line-height:1.68!important;max-width:1100px;color:#a9b8ca!important}
+.keyboard-actions{align-items:center;margin-bottom:7px!important}
+.keyboard-help{margin:3px 0 8px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.018);overflow:hidden}
+.keyboard-help summary{cursor:pointer;list-style:none;padding:9px 12px;font-size:13px;font-weight:900;color:#c8d3df;display:flex;align-items:center;gap:8px;user-select:none}
+.keyboard-help summary::-webkit-details-marker{display:none}
+.keyboard-help summary::before{content:'?';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(111,229,189,.11);color:var(--accent);font-size:12px}
+.keyboard-help[open] summary{border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)}
+.keyboard-help-body{padding:8px 11px 10px;display:grid;gap:7px}
+.keyboard-help .modifier-note,.keyboard-help .printscreen-fn-note{margin:0!important;padding:8px 10px!important;border-radius:8px;background:rgba(255,255,255,.025);font-size:13px!important;line-height:1.58!important}
+.keyboard-help .printscreen-fn-note{border-left:3px solid var(--accent);background:rgba(111,229,189,.045)}
+.side .notice{padding:0!important;overflow:hidden}
+.side .side-help summary{cursor:pointer;list-style:none;padding:16px 17px;font-size:16px;font-weight:900;color:#edf3f8;display:flex;align-items:center;justify-content:space-between}
+.side .side-help summary::-webkit-details-marker{display:none}
+.side .side-help summary::after{content:'+';font-size:18px;color:var(--accent)}
+.side .side-help[open] summary::after{content:'−'}
+.side .side-help[open] summary{border-bottom:1px solid var(--line)}
+.side-help-body{padding:14px 17px 17px;font-size:14px;line-height:1.7;color:#aebdcd}
 .eventlog{font-size:13px!important;line-height:1.55!important}
-.keyboard-actions{align-items:center}
 .fn-virtual-key{display:inline-flex;align-items:center;justify-content:center;min-width:86px;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:11px;background:#0c141e;color:var(--muted);font-weight:900;font-size:13px}
 .fn-virtual-key.active{border-color:#d6a84a;color:#e7c46c;background:rgba(214,168,74,.08)}
 .fn-virtual-key.detected{border-color:var(--accent);color:var(--accent);background:rgba(111,229,189,.08)}
-.modifier-note{margin-top:2px!important;padding:9px 12px;background:rgba(255,255,255,.025);border-radius:8px}
-@media(max-width:860px){.keyboard-test-active .fullscreen-exit{top:16px!important;right:16px!important}.keyboard-test-active .tool-layout{padding-right:96px!important}.keyboard-note{font-size:13px!important}.side .notice{font-size:14px!important}}
+.keyboard-test-active .keyboard-help{margin:2px 0 5px}.keyboard-test-active .keyboard-help summary{padding:6px 10px}.keyboard-test-active .keyboard-help[open] .keyboard-help-body{max-height:105px;overflow:auto}.keyboard-test-active .side{display:none!important}
+@media(max-width:860px){.keyboard-test-active .fullscreen-exit{top:16px!important;right:16px!important}.keyboard-test-active .tool-layout{padding-right:96px!important}.keyboard-note{font-size:13px!important}.side-help-body{font-size:13px}}
 </style>
 '''
     text = re.sub(r'\n<style>\n/\* keyboard-fullscreen-ui-v[0-9]+ \*/[\s\S]*?</style>\n(?=</head>)', '\n', text, count=1)
@@ -50,6 +62,7 @@ def language_of(text: str) -> str:
 
 
 def inject_guidance(text: str) -> str:
+    text = re.sub(r'<details class="keyboard-help">[\s\S]*?</details>', '', text, count=1)
     text = re.sub(r'<p class="keyboard-note printscreen-fn-note">[\s\S]*?</p>', '', text, count=1)
     text = re.sub(r'<p class="keyboard-note modifier-note">[\s\S]*?</p>', '', text, count=1)
     lang = language_of(text)
@@ -73,12 +86,32 @@ def inject_guidance(text: str) -> str:
         'en': 'Some keyboards expose side information for only one Shift/Ctrl/Alt/Win key. If the right-side key does not react, press the matching left-side key once first, then the right-side key. Reverse the order if the left side is the one not identified.',
         'ja': '一部のキーボードではShift/Ctrl/Alt/Winの片側だけ位置情報がブラウザに渡ります。右側が反応しない場合は同じ左側キーを一度押してから右側を押してください。左側が問題なら順序を逆にしてください。',
     }
-    fn_note = f'<p class="keyboard-note printscreen-fn-note">{fn_messages.get(lang, fn_messages["en"])}</p>'
-    mod_note = f'<p class="keyboard-note modifier-note">{mod_messages.get(lang, mod_messages["en"])}</p>'
+    summaries = {
+        'ko':'문제가 있을 때만 보기 · 좌우 키 / Fn 안내','en':'Only if needed · modifier / Fn help','ja':'必要なときだけ表示 · 左右キー / Fn案内',
+        'es':'Solo si hace falta · ayuda de teclas / Fn','de':'Nur bei Bedarf · Tasten-/Fn-Hilfe','fr':'Seulement si nécessaire · aide touches / Fn',
+        'pt':'Só se precisar · ajuda de teclas / Fn','it':'Solo se serve · aiuto tasti / Fn','nl':'Alleen indien nodig · toets-/Fn-hulp',
+        'id':'Hanya bila perlu · bantuan tombol / Fn','vi':'Chỉ khi cần · trợ giúp phím / Fn','zh-cn':'仅在需要时查看 · 左右键 / Fn 帮助','ru':'Только при необходимости · помощь по клавишам / Fn'
+    }
+    help_box = (
+        f'<details class="keyboard-help"><summary>{summaries.get(lang, summaries["en"])}</summary>'
+        f'<div class="keyboard-help-body"><p class="keyboard-note modifier-note">{mod_messages.get(lang, mod_messages["en"])}</p>'
+        f'<p class="keyboard-note printscreen-fn-note">{fn_messages.get(lang, fn_messages["en"])}</p></div></details>'
+    )
     anchor = '<div id="keyboard" class="keyboard"></div>'
     if anchor not in text:
         raise RuntimeError('keyboard anchor not found for guidance')
-    return text.replace(anchor, mod_note + fn_note + anchor, 1)
+    return text.replace(anchor, help_box + anchor, 1)
+
+
+def collapse_side_help(text: str) -> str:
+    if 'side-help' in text:
+        return text
+    pattern = r'<div class="notice"><strong>([^<]+)</strong><br>([\s\S]*?)</div>'
+    def repl(m):
+        title = m.group(1).strip()
+        body = m.group(2).strip()
+        return f'<details class="notice side-help"><summary>{title}</summary><div class="side-help-body">{body}</div></details>'
+    return re.sub(pattern, repl, text, count=1)
 
 
 def inject_runtime_helper(text: str) -> str:
@@ -163,7 +196,8 @@ for path in all_paths:
         raise RuntimeError(f'Keyboard behavior script not found: {path}')
     text = polish_fullscreen_ui(text)
     text = inject_guidance(text)
+    text = collapse_side_help(text)
     text = inject_runtime_helper(text)
     path.write_text(text, encoding='utf-8')
 
-print('Copied canonical keyboard engine unchanged, improved modifier guidance, Fn visibility/status localization, and keyboard-page readability')
+print('Copied canonical keyboard engine unchanged, collapsed optional help, and kept the testing workspace clear')
