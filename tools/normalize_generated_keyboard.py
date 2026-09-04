@@ -34,30 +34,30 @@ def polish_fullscreen_ui(text: str) -> str:
     return text.replace('</head>', override + '</head>', 1)
 
 
-def inject_printscreen_guidance(text: str) -> str:
+def inject_fn_guidance(text: str) -> str:
     text = re.sub(r'<p class="keyboard-note printscreen-fn-note">[\s\S]*?</p>', '', text, count=1)
     lang_match = re.search(r'<html\s+lang="([^"]+)"', text, re.I)
     lang = (lang_match.group(1) if lang_match else 'en').lower()
     messages = {
-        'ko': 'PrintScreen이 반응하지 않으면 Fn + PrintScreen도 눌러보세요. 일부 노트북은 PrintScreen 기능을 Fn 조합으로 제공합니다.',
-        'en': 'If PrintScreen does not respond, also try Fn + PrintScreen. Some laptops provide PrintScreen through an Fn combination.',
-        'ja': 'PrintScreenが反応しない場合は、Fn + PrintScreenも試してください。一部のノートPCではPrintScreenがFnキーとの組み合わせになっています。',
-        'es': 'Si PrintScreen no responde, prueba también Fn + PrintScreen. Algunos portátiles ofrecen PrintScreen mediante una combinación con Fn.',
-        'de': 'Wenn PrintScreen nicht reagiert, probiere auch Fn + PrintScreen. Bei manchen Laptops ist PrintScreen nur über eine Fn-Kombination verfügbar.',
-        'fr': 'Si PrintScreen ne réagit pas, essayez aussi Fn + PrintScreen. Sur certains ordinateurs portables, PrintScreen fonctionne avec une combinaison Fn.',
-        'pt': 'Se PrintScreen não responder, tente também Fn + PrintScreen. Em alguns notebooks, o PrintScreen funciona por uma combinação com Fn.',
-        'it': 'Se PrintScreen non risponde, prova anche Fn + PrintScreen. Su alcuni portatili PrintScreen funziona tramite una combinazione con Fn.',
-        'nl': 'Als PrintScreen niet reageert, probeer dan ook Fn + PrintScreen. Op sommige laptops werkt PrintScreen via een Fn-combinatie.',
-        'id': 'Jika PrintScreen tidak merespons, coba juga Fn + PrintScreen. Pada beberapa laptop, PrintScreen tersedia melalui kombinasi Fn.',
-        'vi': 'Nếu PrintScreen không phản hồi, hãy thử thêm Fn + PrintScreen. Một số laptop dùng tổ hợp Fn cho chức năng PrintScreen.',
-        'zh-cn': '如果 PrintScreen 没有反应，也请尝试 Fn + PrintScreen。部分笔记本电脑需要通过 Fn 组合键使用 PrintScreen。',
-        'ru': 'Если PrintScreen не срабатывает, попробуйте также Fn + PrintScreen. На некоторых ноутбуках PrintScreen доступен только через сочетание с Fn.',
+        'ko': 'Fn 키가 반응하지 않는 것처럼 보이면 Fn + PrintScreen을 함께 눌러 확인해보세요. 일부 노트북은 Fn 키 자체를 브라우저가 직접 인식하지 못하고, Fn 조합의 결과만 확인할 수 있습니다.',
+        'en': 'If the Fn key appears not to respond, try Fn + PrintScreen together. On some laptops the browser cannot detect Fn itself and can only verify the result of an Fn combination.',
+        'ja': 'Fnキーが反応しないように見える場合は、Fn + PrintScreenを同時に押して確認してください。一部のノートPCではブラウザがFnキー自体を直接検出できず、Fn組み合わせの結果だけを確認できます。',
+        'es': 'Si la tecla Fn parece no responder, prueba Fn + PrintScreen a la vez. En algunos portátiles el navegador no puede detectar Fn directamente y solo puede comprobar el resultado de una combinación Fn.',
+        'de': 'Wenn die Fn-Taste nicht zu reagieren scheint, drücke Fn + PrintScreen zusammen. Bei manchen Laptops kann der Browser Fn selbst nicht direkt erkennen, sondern nur das Ergebnis einer Fn-Kombination.',
+        'fr': 'Si la touche Fn semble ne pas réagir, essayez Fn + PrintScreen ensemble. Sur certains portables, le navigateur ne peut pas détecter directement Fn et ne peut vérifier que le résultat d’une combinaison Fn.',
+        'pt': 'Se a tecla Fn parecer não responder, tente Fn + PrintScreen juntos. Em alguns notebooks, o navegador não detecta a tecla Fn diretamente e só consegue verificar o resultado de uma combinação Fn.',
+        'it': 'Se il tasto Fn sembra non rispondere, prova Fn + PrintScreen insieme. Su alcuni portatili il browser non rileva direttamente Fn e può verificare solo il risultato di una combinazione Fn.',
+        'nl': 'Als de Fn-toets niet lijkt te reageren, probeer Fn + PrintScreen tegelijk. Op sommige laptops kan de browser Fn zelf niet rechtstreeks detecteren en alleen het resultaat van een Fn-combinatie controleren.',
+        'id': 'Jika tombol Fn tampak tidak merespons, coba tekan Fn + PrintScreen bersamaan. Pada beberapa laptop, browser tidak dapat mendeteksi Fn secara langsung dan hanya dapat memeriksa hasil kombinasi Fn.',
+        'vi': 'Nếu phím Fn có vẻ không phản hồi, hãy thử nhấn Fn + PrintScreen cùng lúc. Trên một số laptop, trình duyệt không thể nhận trực tiếp phím Fn mà chỉ có thể xác nhận kết quả của tổ hợp Fn.',
+        'zh-cn': '如果 Fn 键看起来没有反应，请尝试同时按 Fn + PrintScreen。部分笔记本电脑的浏览器无法直接识别 Fn 键，只能确认 Fn 组合键产生的结果。',
+        'ru': 'Если кажется, что клавиша Fn не реагирует, попробуйте нажать Fn + PrintScreen вместе. На некоторых ноутбуках браузер не может определить саму Fn и видит только результат комбинации Fn.',
     }
     msg = messages.get(lang, messages['en'])
     note = f'<p class="keyboard-note printscreen-fn-note">{msg}</p>'
     anchor = '<div id="keyboard" class="keyboard"></div>'
     if anchor not in text:
-        raise RuntimeError('keyboard anchor not found for PrintScreen guidance')
+        raise RuntimeError('keyboard anchor not found for Fn guidance')
     return text.replace(anchor, note + anchor, 1)
 
 
@@ -69,7 +69,7 @@ def inject_runtime_helper(text: str) -> str:
 
     style = '''
 <style>
-/* keyboard-runtime-helper-v1 */
+/* keyboard-runtime-helper-v2 */
 .fn-evidence{margin-top:7px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0c141e;font-size:12px;font-weight:800;color:var(--muted)}
 .fn-evidence.detected{border-color:var(--accent);color:var(--accent)}
 .keyboard-test-active .fn-evidence{flex:0 0 auto;margin-top:5px}
@@ -83,7 +83,7 @@ def inject_runtime_helper(text: str) -> str:
 
     script = '''
 <script>
-/* keyboard-runtime-helper-v1 */
+/* keyboard-runtime-helper-v2 */
 (()=>{
   const verifiedShiftSides=new Set();
   const secondaryOutputs=new Set(['Insert','Delete','Home','End','PageUp','PageDown']);
@@ -95,10 +95,6 @@ def inject_runtime_helper(text: str) -> str:
     if(code==='ShiftLeft'||loc===1)return 'ShiftLeft';
     if(code==='ShiftRight'||loc===2)return 'ShiftRight';
     return '';
-  };
-  const paint=(code,on)=>{
-    if(!code)return;
-    document.querySelectorAll(`[data-code="${CSS.escape(code)}"]`).forEach(k=>k.classList.toggle('active',on));
   };
   const inferOppositeShift=()=>{
     if(verifiedShiftSides.size!==1)return '';
@@ -120,7 +116,12 @@ def inject_runtime_helper(text: str) -> str:
     if(printScreen)setFnEvidence('PrintScreen');
     else if(remappedSecondary)setFnEvidence(`${key} (physical ${code})`);
   };
+  const redispatchShift=(e,code)=>{
+    const synthetic=new KeyboardEvent(e.type,{key:'Shift',code,location:code==='ShiftLeft'?1:2,bubbles:true,cancelable:true,repeat:e.repeat,shiftKey:e.shiftKey});
+    document.dispatchEvent(synthetic);
+  };
   const onRaw=e=>{
+    if(e.__pcShiftSynthetic)return;
     const verified=sideFrom(e);
     if(verified)verifiedShiftSides.add(verified);
     if(e.key==='Shift'&&!verified){
@@ -128,13 +129,16 @@ def inject_runtime_helper(text: str) -> str:
         const inferred=inferOppositeShift();
         if(inferred){
           inferredShiftDown=inferred;
-          paint(inferred,true);
-          const log=document.getElementById('keyLog');
-          if(log)log.textContent=`${inferred} inferred from verified opposite Shift`;
+          e.stopImmediatePropagation();
+          redispatchShift(e,inferred);
+          return;
         }
       }else if(e.type==='keyup'&&inferredShiftDown){
-        paint(inferredShiftDown,false);
+        const inferred=inferredShiftDown;
         inferredShiftDown='';
+        e.stopImmediatePropagation();
+        redispatchShift(e,inferred);
+        return;
       }
     }
     checkFnEvidence(e);
@@ -142,8 +146,8 @@ def inject_runtime_helper(text: str) -> str:
 
   window.addEventListener('keydown',onRaw,true);
   window.addEventListener('keyup',onRaw,true);
-  window.addEventListener('blur',()=>{if(inferredShiftDown)paint(inferredShiftDown,false);inferredShiftDown='';});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden&&inferredShiftDown){paint(inferredShiftDown,false);inferredShiftDown='';}});
+  window.addEventListener('blur',()=>{inferredShiftDown='';});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)inferredShiftDown='';});
   document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('fnArm')?.addEventListener('click',()=>setTimeout(()=>{
       const b=document.getElementById('fnArm');
@@ -171,8 +175,8 @@ for path in all_paths:
     if count != 1:
         raise RuntimeError(f'Keyboard behavior script not found: {path}')
     text = polish_fullscreen_ui(text)
-    text = inject_printscreen_guidance(text)
+    text = inject_fn_guidance(text)
     text = inject_runtime_helper(text)
     path.write_text(text, encoding='utf-8')
 
-print('Copied canonical keyboard engine unchanged, added localized PrintScreen Fn guidance, and kept Shift/Fn runtime helper')
+print('Copied canonical keyboard engine unchanged, added localized Fn guidance, and normalized unresolved Shift events')
