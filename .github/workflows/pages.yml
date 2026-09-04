@@ -98,12 +98,26 @@ jobs:
               assert '<details class="keyboard-help">' in t, p
               assert '<aside class="side">' in t and '<div class="notice"><strong>' in t, p
               assert not re.search(r'<div class="keyboard-actions">[\s\S]*?<button id="fnArm"[\s\S]*?</div>\s*<p class="keyboard-note">', t), p
+          displays=[Path('dist/display.html'), *sorted(Path('dist').glob('*/display.html'))]
+          assert len(displays)==13, len(displays)
+          for p in displays:
+              t=p.read_text(encoding='utf-8')
+              assert t.count('class="color-btn"')==9, (p, t.count('class="color-btn"'))
+              assert t.count('class="btn screen-color"')==9, (p, t.count('class="btn screen-color"'))
+              for color in ['#ffffff','#000000','#ff0000','#00ff00','#0000ff','#808080','#ffff00','#00ffff','#ff00ff']:
+                  assert t.count(f'data-color="{color}"')>=2, (p, color)
+          mobiles=[Path('dist/mobile.html'), *sorted(Path('dist').glob('*/mobile.html'))]
+          assert len(mobiles)==13, len(mobiles)
+          for p in mobiles:
+              t=p.read_text(encoding='utf-8')
+              assert t.count('data-open-screen=')==9, (p, t.count('data-open-screen='))
+              assert t.count('data-set-screen=')==9, (p, t.count('data-set-screen='))
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX, responsive readability, and visible sidebar help consistency present on all 117 pages; build revision={revision}')
+          print(f'Language UX, responsive readability, visible sidebar help consistency, and 9-color display parity present on all required pages; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
