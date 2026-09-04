@@ -82,8 +82,8 @@ jobs:
           for p in pages:
               t=p.read_text(encoding='utf-8')
               assert 'id="languagePicker"' in t, p
-              assert 'language-ux-v2' in t, p
-              assert 'ui-polish-v1' in t, p
+              assert 'language-ux-v3' in t, p
+              assert 'ui-polish-v2' in t, p
               assert 'data-locale=' in t, p
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
