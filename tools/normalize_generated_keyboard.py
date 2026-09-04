@@ -39,19 +39,19 @@ def inject_fn_guidance(text: str) -> str:
     lang_match = re.search(r'<html\s+lang="([^"]+)"', text, re.I)
     lang = (lang_match.group(1) if lang_match else 'en').lower()
     messages = {
-        'ko': 'Fn 키가 반응하지 않는 것처럼 보이면 Fn + PrintScreen을 함께 눌러 확인해보세요. 일부 노트북은 Fn 키 자체를 브라우저가 직접 인식하지 못하고, Fn 조합의 결과만 확인할 수 있습니다.',
-        'en': 'If the Fn key appears not to respond, try Fn + PrintScreen together. On some laptops the browser cannot detect Fn itself and can only verify the result of an Fn combination.',
-        'ja': 'Fnキーが反応しないように見える場合は、Fn + PrintScreenを同時に押して確認してください。一部のノートPCではブラウザがFnキー自体を直接検出できず、Fn組み合わせの結果だけを確認できます。',
-        'es': 'Si la tecla Fn parece no responder, prueba Fn + PrintScreen a la vez. En algunos portátiles el navegador no puede detectar Fn directamente y solo puede comprobar el resultado de una combinación Fn.',
-        'de': 'Wenn die Fn-Taste nicht zu reagieren scheint, drücke Fn + PrintScreen zusammen. Bei manchen Laptops kann der Browser Fn selbst nicht direkt erkennen, sondern nur das Ergebnis einer Fn-Kombination.',
-        'fr': 'Si la touche Fn semble ne pas réagir, essayez Fn + PrintScreen ensemble. Sur certains portables, le navigateur ne peut pas détecter directement Fn et ne peut vérifier que le résultat d’une combinaison Fn.',
-        'pt': 'Se a tecla Fn parecer não responder, tente Fn + PrintScreen juntos. Em alguns notebooks, o navegador não detecta a tecla Fn diretamente e só consegue verificar o resultado de uma combinação Fn.',
-        'it': 'Se il tasto Fn sembra non rispondere, prova Fn + PrintScreen insieme. Su alcuni portatili il browser non rileva direttamente Fn e può verificare solo il risultato di una combinazione Fn.',
-        'nl': 'Als de Fn-toets niet lijkt te reageren, probeer Fn + PrintScreen tegelijk. Op sommige laptops kan de browser Fn zelf niet rechtstreeks detecteren en alleen het resultaat van een Fn-combinatie controleren.',
-        'id': 'Jika tombol Fn tampak tidak merespons, coba tekan Fn + PrintScreen bersamaan. Pada beberapa laptop, browser tidak dapat mendeteksi Fn secara langsung dan hanya dapat memeriksa hasil kombinasi Fn.',
-        'vi': 'Nếu phím Fn có vẻ không phản hồi, hãy thử nhấn Fn + PrintScreen cùng lúc. Trên một số laptop, trình duyệt không thể nhận trực tiếp phím Fn mà chỉ có thể xác nhận kết quả của tổ hợp Fn.',
-        'zh-cn': '如果 Fn 键看起来没有反应，请尝试同时按 Fn + PrintScreen。部分笔记本电脑的浏览器无法直接识别 Fn 键，只能确认 Fn 组合键产生的结果。',
-        'ru': 'Если кажется, что клавиша Fn не реагирует, попробуйте нажать Fn + PrintScreen вместе. На некоторых ноутбуках браузер не может определить саму Fn и видит только результат комбинации Fn.',
+        'ko': 'Fn 키가 반응하지 않는 것처럼 보이면 Fn + PrintScreen을 함께 눌러 확인해보세요. 작은 키보드나 노트북에서는 Fn 확인을 켠 뒤 같은 물리키를 먼저 Fn 없이 한 번, 이어서 Fn과 함께 한 번 눌러 출력이 달라지는지도 확인할 수 있습니다.',
+        'en': 'If Fn appears not to respond, try Fn + PrintScreen. On compact keyboards or laptops, turn on Fn check, press the same physical key once without Fn, then once with Fn to compare the browser-visible output.',
+        'ja': 'Fnキーが反応しないように見える場合はFn + PrintScreenを試してください。小型キーボードやノートPCではFn確認をオンにし、同じ物理キーをFnなしで1回、続けてFnと一緒に1回押して出力の違いも確認できます。',
+        'es': 'Si Fn parece no responder, prueba Fn + PrintScreen. En teclados compactos o portátiles, activa la comprobación Fn, pulsa la misma tecla física una vez sin Fn y luego otra vez con Fn para comparar la salida visible del navegador.',
+        'de': 'Wenn Fn nicht zu reagieren scheint, probiere Fn + PrintScreen. Bei kompakten Tastaturen oder Laptops: Fn-Prüfung einschalten, dieselbe physische Taste einmal ohne Fn und danach einmal mit Fn drücken und die Browser-Ausgabe vergleichen.',
+        'fr': 'Si Fn semble ne pas réagir, essayez Fn + PrintScreen. Sur un clavier compact ou un portable, activez la vérification Fn, appuyez une fois sur la même touche sans Fn puis une fois avec Fn afin de comparer la sortie visible du navigateur.',
+        'pt': 'Se Fn parecer não responder, tente Fn + PrintScreen. Em teclados compactos ou notebooks, ative a verificação de Fn, pressione a mesma tecla física uma vez sem Fn e depois uma vez com Fn para comparar a saída visível no navegador.',
+        'it': 'Se Fn sembra non rispondere, prova Fn + PrintScreen. Su tastiere compatte o portatili, attiva il controllo Fn, premi lo stesso tasto fisico una volta senza Fn e poi una volta con Fn per confrontare l’output visibile nel browser.',
+        'nl': 'Als Fn niet lijkt te reageren, probeer Fn + PrintScreen. Zet op compacte toetsenborden of laptops Fn-controle aan, druk dezelfde fysieke toets één keer zonder Fn en daarna één keer met Fn om de browseruitvoer te vergelijken.',
+        'id': 'Jika Fn tampak tidak merespons, coba Fn + PrintScreen. Pada keyboard ringkas atau laptop, aktifkan pemeriksaan Fn, tekan tombol fisik yang sama sekali tanpa Fn lalu sekali dengan Fn untuk membandingkan keluaran yang terlihat di browser.',
+        'vi': 'Nếu Fn có vẻ không phản hồi, hãy thử Fn + PrintScreen. Với bàn phím nhỏ hoặc laptop, bật kiểm tra Fn, nhấn cùng một phím vật lý một lần không giữ Fn rồi một lần giữ Fn để so sánh đầu ra mà trình duyệt nhìn thấy.',
+        'zh-cn': '如果 Fn 看起来没有反应，请尝试 Fn + PrintScreen。对于小型键盘或笔记本电脑，可开启 Fn 检查，先不按 Fn 按一次同一个物理按键，再按住 Fn 按一次，以比较浏览器可见的输出。',
+        'ru': 'Если Fn кажется неработающей, попробуйте Fn + PrintScreen. На компактной клавиатуре или ноутбуке включите проверку Fn, нажмите ту же физическую клавишу один раз без Fn, затем один раз с Fn и сравните видимый браузеру результат.',
     }
     note = f'<p class="keyboard-note printscreen-fn-note">{messages.get(lang, messages["en"])}</p>'
     anchor = '<div id="keyboard" class="keyboard"></div>'
@@ -68,26 +68,27 @@ def inject_runtime_helper(text: str) -> str:
 
     style = '''
 <style>
-/* keyboard-runtime-helper-v3 */
+/* keyboard-runtime-helper-v4 */
 .fn-evidence{margin-top:7px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0c141e;font-size:12px;font-weight:800;color:var(--muted)}
 .fn-evidence.detected{border-color:var(--accent);color:var(--accent)}
+.fn-evidence.indeterminate{border-color:#d6a84a;color:#e7c46c}
 .keyboard-test-active .fn-evidence{flex:0 0 auto;margin-top:5px}
 </style>
 '''
     text = text.replace('</head>', style + '</head>', 1)
     if '<div id="keyLog"' not in text:
         raise RuntimeError('keyLog anchor not found')
-    panel = '<div id="fnEvidenceStatus" class="fn-evidence">Fn status: click Fn check, then press a physical Fn combination.</div>'
+    panel = '<div id="fnEvidenceStatus" class="fn-evidence">Fn status: turn on Fn check, then compare the same physical key without Fn and with Fn.</div>'
     text = text.replace('<div id="keyLog"', panel + '<div id="keyLog"', 1)
 
     script = '''
 <script>
-/* keyboard-runtime-helper-v3 */
+/* keyboard-runtime-helper-v4 */
 (()=>{
   const families=['Shift','Control','Alt','Meta'];
   const verifiedSides=new Map(families.map(f=>[f,new Set()]));
   const inferredDown=new Map();
-  const secondaryOutputs=new Set(['Insert','Delete','Home','End','PageUp','PageDown']);
+  let fnBaseline=null;
 
   const familyFrom=e=>{
     const key=e.key||'',code=e.code||'';
@@ -109,70 +110,75 @@ def inject_runtime_helper(text: str) -> str:
     }
     return '';
   };
-  const inferOpposite=(family)=>{
+  const inferOpposite=family=>{
     const sides=verifiedSides.get(family);
     if(!sides||sides.size!==1)return '';
     return sides.has(family+'Left')?family+'Right':family+'Left';
   };
+  const patchEventSide=(e,code)=>{
+    const loc=code.endsWith('Left')?1:2;
+    try{Object.defineProperty(e,'code',{configurable:true,value:code});}catch{}
+    try{Object.defineProperty(e,'location',{configurable:true,value:loc});}catch{}
+    try{Object.defineProperty(e,'keyLocation',{configurable:true,value:loc});}catch{}
+  };
   const fnModeOn=()=>document.getElementById('fnArm')?.classList.contains('active')===true;
-  const setFnEvidence=output=>{
-    const status=document.getElementById('fnEvidenceStatus');
-    if(status){status.classList.add('detected');status.textContent=`Fn output detected: ${output}`;}
-    const log=document.getElementById('keyLog');
-    if(log)log.textContent=`Fn output detected: ${output} | browser-visible secondary result`;
+  const statusEl=()=>document.getElementById('fnEvidenceStatus');
+  const setFnStatus=(msg,kind='')=>{
+    const s=statusEl();if(!s)return;
+    s.classList.remove('detected','indeterminate');
+    if(kind)s.classList.add(kind);
+    s.textContent=msg;
   };
-  const checkFnEvidence=e=>{
-    if(e.type!=='keydown'||e.repeat||!fnModeOn())return;
-    const key=e.key||'',code=e.code||'';
-    const printScreen=key==='PrintScreen'||code==='PrintScreen'||code==='Snapshot';
-    const remappedSecondary=secondaryOutputs.has(key)&&code&&code!==key;
-    if(printScreen)setFnEvidence('PrintScreen');
-    else if(remappedSecondary)setFnEvidence(`${key} (physical ${code})`);
-  };
-  const redispatch=(e,family,code)=>{
-    const key=family==='Control'?'Control':family==='Meta'?'Meta':family;
-    const synthetic=new KeyboardEvent(e.type,{key,code,location:code.endsWith('Left')?1:2,bubbles:true,cancelable:true,repeat:e.repeat,shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey,metaKey:e.metaKey});
-    document.dispatchEvent(synthetic);
+  const sig=e=>({key:e.key||'',code:e.code||'',location:Number(e.location)||0});
+  const sameSig=(a,b)=>a&&b&&a.key===b.key&&a.code===b.code&&a.location===b.location;
+  const isPrintScreen=e=>(e.key||'')==='PrintScreen'||(e.code||'')==='PrintScreen'||(e.code||'')==='Snapshot';
+  const handleFn=e=>{
+    if(e.type!=='keydown'||e.repeat||familyFrom(e)||!fnModeOn())return;
+    if(isPrintScreen(e)){
+      fnBaseline=null;
+      setFnStatus('Fn combination output detected: PrintScreen','detected');
+      return;
+    }
+    const now=sig(e);
+    if(!fnBaseline){
+      fnBaseline=now;
+      setFnStatus(`Baseline saved: ${now.key||now.code}. Now hold Fn and press the same physical key.`);
+      return;
+    }
+    if(sameSig(fnBaseline,now)){
+      setFnStatus('Fn comparison complete: the browser reports the same input with and without Fn. This combination cannot be distinguished here.','indeterminate');
+    }else{
+      setFnStatus(`Fn combination output changed: ${fnBaseline.key||fnBaseline.code} → ${now.key||now.code}`,'detected');
+    }
+    fnBaseline=null;
   };
   const onRaw=e=>{
     const family=familyFrom(e);
     if(family){
       const verified=sideFrom(family,e);
-      if(verified)verifiedSides.get(family).add(verified);
-      if(!verified){
-        if(e.type==='keydown'&&!e.repeat){
-          const inferred=inferOpposite(family);
-          if(inferred){
-            inferredDown.set(family,inferred);
-            e.stopImmediatePropagation();
-            redispatch(e,family,inferred);
-            return;
-          }
-        }else if(e.type==='keyup'&&inferredDown.has(family)){
-          const inferred=inferredDown.get(family);
-          inferredDown.delete(family);
-          e.stopImmediatePropagation();
-          redispatch(e,family,inferred);
-          return;
-        }
+      if(verified){
+        verifiedSides.get(family).add(verified);
+      }else if(e.type==='keydown'&&!e.repeat){
+        const inferred=inferOpposite(family);
+        if(inferred){inferredDown.set(family,inferred);patchEventSide(e,inferred);}
+      }else if(e.type==='keyup'&&inferredDown.has(family)){
+        const inferred=inferredDown.get(family);inferredDown.delete(family);patchEventSide(e,inferred);
       }
     }
-    checkFnEvidence(e);
+    handleFn(e);
   };
 
   window.addEventListener('keydown',onRaw,true);
   window.addEventListener('keyup',onRaw,true);
-  window.addEventListener('blur',()=>inferredDown.clear());
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)inferredDown.clear();});
+  window.addEventListener('blur',()=>{inferredDown.clear();fnBaseline=null;});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){inferredDown.clear();fnBaseline=null;}});
   document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('fnArm')?.addEventListener('click',()=>setTimeout(()=>{
-      const b=document.getElementById('fnArm');
-      const status=document.getElementById('fnEvidenceStatus');
-      if(!status)return;
-      status.classList.remove('detected');
-      status.textContent=b?.classList.contains('active')
-        ? 'Fn status: waiting for a browser-visible Fn output...'
-        : 'Fn status: click Fn check, then press a physical Fn combination.';
+      fnBaseline=null;
+      const on=fnModeOn();
+      setFnStatus(on
+        ? 'Fn check ON: first press a target key once without Fn, then press the same physical key with Fn.'
+        : 'Fn status: turn on Fn check, then compare the same physical key without Fn and with Fn.');
     },0));
   });
 })();
@@ -195,4 +201,4 @@ for path in all_paths:
     text = inject_runtime_helper(text)
     path.write_text(text, encoding='utf-8')
 
-print('Copied canonical keyboard engine unchanged, added localized Fn guidance, and hardened unresolved Shift/Control/Alt/Meta side handling')
+print('Copied canonical keyboard engine unchanged, normalized unresolved modifier sides on the original event, and added two-step compact Fn verification')
