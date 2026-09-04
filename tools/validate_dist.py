@@ -99,14 +99,31 @@ for lang, folder in DIRS.items():
     if not path.exists():
         continue
     text = path.read_text(encoding='utf-8')
-    for required in ['id="startKeyboard"','id="exitKeyboard"','id="resetKeyboard"','fitKeyboard','fnArmed','MetaLeft','MetaRight']:
+    rel = str(path.relative_to(ROOT))
+    for required in [
+        'id="startKeyboard"','id="exitKeyboard"','id="resetKeyboard"','id="fnArm"',
+        'id="fnEvidenceStatus"','fitKeyboard','fnArmed','MetaLeft','MetaRight',
+        'keyboard-runtime-helper-v6','window.__pcKeyboardEvidence',
+        "modifierEvidence[family][verified]='direct'",
+        "modifierEvidence[family][inferred]='assisted'",
+        "fnEvidence.state='unavailable'",
+        "fnEvidence.state='confirmed'",
+        "class=\"keyboard-help\"",
+        "class=\"notice side-help\"",
+    ]:
         if required not in text:
-            err(str(path.relative_to(ROOT)), 'keyboard invariant missing', required)
-    # Match only the obsolete identifiers themselves. Do not reject new helper
-    # names merely because they contain one of these strings as a substring.
-    for forbidden in ['ShiftUnknown','shiftArm','initKeyboard']:
+            err(rel, 'keyboard invariant missing', required)
+    # Fn must remain a combination/evidence check: no red/fault verdict and the
+    # unavailable state must explicitly avoid calling the keyboard broken.
+    for forbidden in ['ShiftUnknown','shiftArm','initKeyboard','fn-evidence faulty','fn-evidence failed']:
         if re.search(rf'\b{re.escape(forbidden)}\b', text):
-            err(str(path.relative_to(ROOT)), 'obsolete keyboard path present', forbidden)
+            err(rel, 'obsolete or unsafe keyboard path present', forbidden)
+    if 'fn-evidence.unavailable' not in text or 'fn-evidence.recheck' not in text or 'fn-evidence.detected' not in text:
+        err(rel, 'Fn result-state palette incomplete')
+    if lang == 'ko':
+        for phrase in ['Fn 조합 확인','키보드 고장을 의미하지 않습니다','문제가 있을 때만 보기']:
+            if phrase not in text:
+                err(rel, 'Korean keyboard UX invariant missing', phrase)
 
 # Reserved ad slots: exactly one on the three non-invasive surfaces per locale.
 for lang, folder in DIRS.items():
@@ -132,4 +149,4 @@ if errors:
     print(f'Validation failed: {len(errors)} issue(s)')
     sys.exit(2)
 
-print(f'Validation PASS: {len(html_files)} HTML, {loc_count} sitemap URLs, {len(LOCALES)} locales')
+print(f'Validation PASS: {len(html_files)} HTML, {loc_count} sitemap URLs, {len(LOCALES)} locales, keyboard Fn/modifier evidence invariants PASS')
