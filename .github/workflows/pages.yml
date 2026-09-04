@@ -36,6 +36,7 @@ jobs:
             tools/append_cn_ru.py \
             tools/normalize_generated_structure.py \
             tools/normalize_generated_keyboard.py \
+            tools/normalize_display_colors.py \
             tools/inject_language_ux.py \
             tools/localize_korean_ui.py \
             tools/finalize_keyboard_help.py \
@@ -44,7 +45,7 @@ jobs:
       - name: Check required source files
         run: |
           set -e
-          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_structure.py tools/normalize_generated_keyboard.py tools/inject_language_ux.py tools/localize_korean_ui.py tools/finalize_keyboard_help.py tools/validate_dist.py; do
+          for file in index.html checkup.html display.html keyboard.html mic.html mobile.html mouse.html speaker.html webcam.html app.js mobile.js styles.css robots.txt sitemap.xml tools/build_global.py.gz tools/expand_batch2.py tools/append_cn_ru.py tools/normalize_generated_structure.py tools/normalize_generated_keyboard.py tools/normalize_display_colors.py tools/inject_language_ux.py tools/localize_korean_ui.py tools/finalize_keyboard_help.py tools/validate_dist.py; do
             test -s "$file"
           done
 
@@ -69,6 +70,7 @@ jobs:
           python tools/append_cn_ru.py
           python tools/normalize_generated_structure.py
           python tools/normalize_generated_keyboard.py
+          python tools/normalize_display_colors.py
           python tools/inject_language_ux.py
           python tools/localize_korean_ui.py
           python tools/finalize_keyboard_help.py
@@ -102,22 +104,27 @@ jobs:
           assert len(displays)==13, len(displays)
           for p in displays:
               t=p.read_text(encoding='utf-8')
-              assert t.count('class="color-btn"')==9, (p, t.count('class="color-btn"'))
-              assert t.count('class="btn screen-color"')==9, (p, t.count('class="btn screen-color"'))
-              for color in ['#ffffff','#000000','#ff0000','#00ff00','#0000ff','#808080','#ffff00','#00ffff','#ff00ff']:
+              assert t.count('class="color-btn"')==8, (p, t.count('class="color-btn"'))
+              assert t.count('class="btn screen-color"')==8, (p, t.count('class="btn screen-color"'))
+              for color in ['#ffffff','#000000','#ff0000','#00ff00','#0000ff','#808080','#ffff00','#00ffff']:
                   assert t.count(f'data-color="{color}"')>=2, (p, color)
           mobiles=[Path('dist/mobile.html'), *sorted(Path('dist').glob('*/mobile.html'))]
           assert len(mobiles)==13, len(mobiles)
           for p in mobiles:
               t=p.read_text(encoding='utf-8')
-              assert t.count('data-open-screen=')==9, (p, t.count('data-open-screen='))
-              assert t.count('data-set-screen=')==9, (p, t.count('data-set-screen='))
+              assert t.count('data-open-screen=')==8, (p, t.count('data-open-screen='))
+              assert t.count('data-set-screen=')==8, (p, t.count('data-set-screen='))
+          ko_display=Path('dist/display.html').read_text(encoding='utf-8')
+          ko_mobile=Path('dist/mobile.html').read_text(encoding='utf-8')
+          for label in ['회색','노랑','청록']:
+              assert label in ko_display, label
+              assert label in ko_mobile, label
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX, responsive readability, visible sidebar help consistency, and 9-color display parity present on all required pages; build revision={revision}')
+          print(f'Language UX, responsive readability, visible sidebar help consistency, and 8-color display parity present on all required pages; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
