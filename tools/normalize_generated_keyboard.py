@@ -53,8 +53,7 @@ def inject_fn_guidance(text: str) -> str:
         'zh-cn': '如果 Fn 键看起来没有反应，请尝试同时按 Fn + PrintScreen。部分笔记本电脑的浏览器无法直接识别 Fn 键，只能确认 Fn 组合键产生的结果。',
         'ru': 'Если кажется, что клавиша Fn не реагирует, попробуйте нажать Fn + PrintScreen вместе. На некоторых ноутбуках браузер не может определить саму Fn и видит только результат комбинации Fn.',
     }
-    msg = messages.get(lang, messages['en'])
-    note = f'<p class="keyboard-note printscreen-fn-note">{msg}</p>'
+    note = f'<p class="keyboard-note printscreen-fn-note">{messages.get(lang, messages["en"])}</p>'
     anchor = '<div id="keyboard" class="keyboard"></div>'
     if anchor not in text:
         raise RuntimeError('keyboard anchor not found for Fn guidance')
@@ -69,7 +68,7 @@ def inject_runtime_helper(text: str) -> str:
 
     style = '''
 <style>
-/* keyboard-runtime-helper-v2 */
+/* keyboard-runtime-helper-v3 */
 .fn-evidence{margin-top:7px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0c141e;font-size:12px;font-weight:800;color:var(--muted)}
 .fn-evidence.detected{border-color:var(--accent);color:var(--accent)}
 .keyboard-test-active .fn-evidence{flex:0 0 auto;margin-top:5px}
@@ -83,22 +82,37 @@ def inject_runtime_helper(text: str) -> str:
 
     script = '''
 <script>
-/* keyboard-runtime-helper-v2 */
+/* keyboard-runtime-helper-v3 */
 (()=>{
-  const verifiedShiftSides=new Set();
+  const families=['Shift','Control','Alt','Meta'];
+  const verifiedSides=new Map(families.map(f=>[f,new Set()]));
+  const inferredDown=new Map();
   const secondaryOutputs=new Set(['Insert','Delete','Home','End','PageUp','PageDown']);
-  let inferredShiftDown='';
 
-  const sideFrom=e=>{
-    const code=e.code||'';
-    const loc=Number(e.location)||Number(e.keyLocation)||0;
-    if(code==='ShiftLeft'||loc===1)return 'ShiftLeft';
-    if(code==='ShiftRight'||loc===2)return 'ShiftRight';
+  const familyFrom=e=>{
+    const key=e.key||'',code=e.code||'';
+    if(key==='Shift'||code.startsWith('Shift'))return 'Shift';
+    if(key==='Control'||code.startsWith('Control'))return 'Control';
+    if(key==='Alt'||key==='AltGraph'||code.startsWith('Alt'))return 'Alt';
+    if(key==='Meta'||key==='OS'||code.startsWith('Meta')||code.startsWith('OS'))return 'Meta';
     return '';
   };
-  const inferOppositeShift=()=>{
-    if(verifiedShiftSides.size!==1)return '';
-    return verifiedShiftSides.has('ShiftLeft')?'ShiftRight':'ShiftLeft';
+  const sideFrom=(family,e)=>{
+    const code=(e.code||'').replace('OSLeft','MetaLeft').replace('OSRight','MetaRight');
+    const loc=Number(e.location)||Number(e.keyLocation)||0;
+    if(code===family+'Left'||loc===1)return family+'Left';
+    if(code===family+'Right'||loc===2)return family+'Right';
+    if(family==='Meta'){
+      const kc=Number(e.keyCode)||0;
+      if(kc===91)return 'MetaLeft';
+      if(kc===92)return 'MetaRight';
+    }
+    return '';
+  };
+  const inferOpposite=(family)=>{
+    const sides=verifiedSides.get(family);
+    if(!sides||sides.size!==1)return '';
+    return sides.has(family+'Left')?family+'Right':family+'Left';
   };
   const fnModeOn=()=>document.getElementById('fnArm')?.classList.contains('active')===true;
   const setFnEvidence=output=>{
@@ -109,36 +123,38 @@ def inject_runtime_helper(text: str) -> str:
   };
   const checkFnEvidence=e=>{
     if(e.type!=='keydown'||e.repeat||!fnModeOn())return;
-    const key=e.key||'';
-    const code=e.code||'';
+    const key=e.key||'',code=e.code||'';
     const printScreen=key==='PrintScreen'||code==='PrintScreen'||code==='Snapshot';
     const remappedSecondary=secondaryOutputs.has(key)&&code&&code!==key;
     if(printScreen)setFnEvidence('PrintScreen');
     else if(remappedSecondary)setFnEvidence(`${key} (physical ${code})`);
   };
-  const redispatchShift=(e,code)=>{
-    const synthetic=new KeyboardEvent(e.type,{key:'Shift',code,location:code==='ShiftLeft'?1:2,bubbles:true,cancelable:true,repeat:e.repeat,shiftKey:e.shiftKey});
+  const redispatch=(e,family,code)=>{
+    const key=family==='Control'?'Control':family==='Meta'?'Meta':family;
+    const synthetic=new KeyboardEvent(e.type,{key,code,location:code.endsWith('Left')?1:2,bubbles:true,cancelable:true,repeat:e.repeat,shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey,metaKey:e.metaKey});
     document.dispatchEvent(synthetic);
   };
   const onRaw=e=>{
-    if(e.__pcShiftSynthetic)return;
-    const verified=sideFrom(e);
-    if(verified)verifiedShiftSides.add(verified);
-    if(e.key==='Shift'&&!verified){
-      if(e.type==='keydown'&&!e.repeat){
-        const inferred=inferOppositeShift();
-        if(inferred){
-          inferredShiftDown=inferred;
+    const family=familyFrom(e);
+    if(family){
+      const verified=sideFrom(family,e);
+      if(verified)verifiedSides.get(family).add(verified);
+      if(!verified){
+        if(e.type==='keydown'&&!e.repeat){
+          const inferred=inferOpposite(family);
+          if(inferred){
+            inferredDown.set(family,inferred);
+            e.stopImmediatePropagation();
+            redispatch(e,family,inferred);
+            return;
+          }
+        }else if(e.type==='keyup'&&inferredDown.has(family)){
+          const inferred=inferredDown.get(family);
+          inferredDown.delete(family);
           e.stopImmediatePropagation();
-          redispatchShift(e,inferred);
+          redispatch(e,family,inferred);
           return;
         }
-      }else if(e.type==='keyup'&&inferredShiftDown){
-        const inferred=inferredShiftDown;
-        inferredShiftDown='';
-        e.stopImmediatePropagation();
-        redispatchShift(e,inferred);
-        return;
       }
     }
     checkFnEvidence(e);
@@ -146,8 +162,8 @@ def inject_runtime_helper(text: str) -> str:
 
   window.addEventListener('keydown',onRaw,true);
   window.addEventListener('keyup',onRaw,true);
-  window.addEventListener('blur',()=>{inferredShiftDown='';});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)inferredShiftDown='';});
+  window.addEventListener('blur',()=>inferredDown.clear());
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)inferredDown.clear();});
   document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('fnArm')?.addEventListener('click',()=>setTimeout(()=>{
       const b=document.getElementById('fnArm');
@@ -179,4 +195,4 @@ for path in all_paths:
     text = inject_runtime_helper(text)
     path.write_text(text, encoding='utf-8')
 
-print('Copied canonical keyboard engine unchanged, added localized Fn guidance, and normalized unresolved Shift events')
+print('Copied canonical keyboard engine unchanged, added localized Fn guidance, and hardened unresolved Shift/Control/Alt/Meta side handling')
