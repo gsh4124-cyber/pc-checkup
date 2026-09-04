@@ -1,6 +1,6 @@
 import { chromium, firefox, webkit } from 'playwright';
 
-const base = 'https://gsh4124-cyber.github.io/pc-checkup';
+const base = 'https://pc-checkup.pages.dev';
 const expectedSitemapUrls = 117;
 const problems = [];
 const assert = (ok, message) => { if (!ok) problems.push(message); };
@@ -14,6 +14,7 @@ assert(sitemapResponse.ok, `sitemap HTTP ${sitemapResponse.status}`);
 const sitemap = await sitemapResponse.text();
 const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
 assert(urls.length === expectedSitemapUrls, `expected ${expectedSitemapUrls} sitemap URLs, got ${urls.length}`);
+assert(urls.every(url => url.startsWith(`${base}/`)), 'sitemap contains non-Cloudflare production URLs');
 
 for (let i = 0; i < urls.length; i += 12) {
   const batch = urls.slice(i, i + 12);
@@ -76,14 +77,12 @@ for (const item of representative) {
   page.on('pageerror', error => pageErrors.push(String(error)));
   page.on('request', request => {
     const url = new URL(request.url());
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
-      if (url.origin !== 'https://gsh4124-cyber.github.io') externalRequests.add(url.origin);
-    }
+    if ((url.protocol === 'http:' || url.protocol === 'https:') && url.origin !== base) externalRequests.add(url.origin);
   });
 
   const response = await page.goto(`${base}${item.path}`, { waitUntil: 'networkidle', timeout: 30000 });
   assert(response?.ok(), `${item.path}: navigation failed`);
-  assert(new URL(page.url()).pathname === `/pc-checkup${item.path}`, `${item.path}: unexpected locale redirect to ${page.url()}`);
+  assert(new URL(page.url()).pathname === item.path, `${item.path}: unexpected locale redirect to ${page.url()}`);
   assert((await page.locator('html').getAttribute('lang')) === item.lang, `${item.path}: html lang mismatch: ${await page.locator('html').getAttribute('lang')}`);
   assert(await page.locator('.brand').isVisible(), `${item.path}: brand not visible`);
   assert((await page.locator('#languagePicker').count()) === 1, `${item.path}: canonical language selector must exist exactly once`);
@@ -104,7 +103,7 @@ for (const path of ['/en/keyboard.html', '/en/mobile.html', '/zh-CN/keyboard.htm
   page.on('pageerror', error => pageErrors.push(String(error)));
   page.on('request', request => {
     const url = new URL(request.url());
-    if ((url.protocol === 'http:' || url.protocol === 'https:') && url.origin !== 'https://gsh4124-cyber.github.io') externalRequests.add(url.origin);
+    if ((url.protocol === 'http:' || url.protocol === 'https:') && url.origin !== base) externalRequests.add(url.origin);
   });
   const response = await page.goto(`${base}${path}`, { waitUntil: 'networkidle', timeout: 30000 });
   assert(response?.ok(), `${path}: navigation failed`);
@@ -118,8 +117,6 @@ for (const path of ['/en/keyboard.html', '/en/mobile.html', '/zh-CN/keyboard.htm
   await page.close();
 }
 
-// Chromium performs the exhaustive visual-layout sweep over every public URL.
-// Other engines keep the representative compatibility checks above to control CI cost.
 if (browserName === 'chromium') {
   for (const viewport of [
     { name: 'mobile-360', width: 360, height: 800 },
@@ -146,4 +143,4 @@ if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log(`DEVICE CHECKUP production QA passed on ${browserName}: ${urls.length} sitemap URLs reachable; representative multi-engine checks passed${browserName === 'chromium' ? '; all 117 URLs passed 360px mobile and 1280px desktop layout/clipping/overflow sweep' : ''}.`);
+console.log(`DEVICE CHECKUP Cloudflare production QA passed on ${browserName}: ${urls.length} sitemap URLs reachable; representative multi-engine checks passed${browserName === 'chromium' ? '; all 117 URLs passed 360px mobile and 1280px desktop layout/clipping/overflow sweep' : ''}.`);
