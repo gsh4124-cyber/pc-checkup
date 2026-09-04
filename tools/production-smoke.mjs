@@ -39,6 +39,35 @@ const representative = [
   { path: '/ru/', lang: 'ru', browserLocale: 'ru-RU' },
 ];
 
+const collectLayoutProblems = async (page, label) => {
+  const metrics = await page.evaluate(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const selectors = '.wrap,.tool-layout,.toolbox,.side,.notice,.card,.stat,.checkitem,.progress-card,.eventlog,.controls,.actions,.check-actions,header,.nav';
+    const badBounds = [...document.querySelectorAll(selectors)].filter(el => {
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && (r.left < -1 || r.right > root.clientWidth + 1);
+    }).slice(0, 8).map(el => ({ tag: el.tagName, cls: el.className, left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right }));
+    const clippedText = [...document.querySelectorAll('.notice,p,.card,.stat,.btn,.pill,.checkitem,.eventlog')].filter(el => {
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      const overflowX = style.overflowX;
+      if (overflowX === 'auto' || overflowX === 'scroll') return false;
+      return el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2;
+    }).slice(0, 8).map(el => ({ tag: el.tagName, cls: el.className, text: (el.textContent || '').trim().slice(0, 60) }));
+    return {
+      horizontalOverflow: root.scrollWidth > root.clientWidth + 1 || body.scrollWidth > root.clientWidth + 1,
+      badBounds,
+      clippedText,
+    };
+  });
+  assert(!metrics.horizontalOverflow, `${label}: horizontal overflow`);
+  assert(metrics.badBounds.length === 0, `${label}: viewport-bound layout issue ${JSON.stringify(metrics.badBounds)}`);
+  assert(metrics.clippedText.length === 0, `${label}: clipped text ${JSON.stringify(metrics.clippedText)}`);
+};
+
 for (const item of representative) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: item.browserLocale });
   const page = await context.newPage();
@@ -62,8 +91,7 @@ for (const item of representative) {
   assert((await page.locator('header select[aria-label]').count()) === 1, `${item.path}: header contains duplicate language selects`);
   assert((await page.locator('a[href$="checkup.html"]').count()) > 0, `${item.path}: PC checkup entry missing`);
   assert((await page.locator('a[href$="mobile.html"]').count()) > 0, `${item.path}: mobile checkup entry missing`);
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-  assert(!overflow, `${item.path}: mobile horizontal overflow`);
+  await collectLayoutProblems(page, `${item.path} mobile`);
   assert(pageErrors.length === 0, `${item.path}: page errors: ${pageErrors.join(' | ')}`);
   assert(externalRequests.size === 0, `${item.path}: unexpected external network origins: ${[...externalRequests].join(', ')}`);
   await context.close();
@@ -84,9 +112,32 @@ for (const path of ['/en/keyboard.html', '/en/mobile.html', '/zh-CN/keyboard.htm
   assert((await page.locator('#languagePicker').count()) === 1, `${path}: canonical language selector must exist exactly once`);
   assert((await page.locator('.lang-switch').count()) === 0, `${path}: retired duplicate .lang-switch is still present`);
   assert((await page.locator('header select[aria-label]').count()) === 1, `${path}: header contains duplicate language selects`);
+  await collectLayoutProblems(page, `${path} mobile`);
   assert(pageErrors.length === 0, `${path}: page errors: ${pageErrors.join(' | ')}`);
   assert(externalRequests.size === 0, `${path}: unexpected external network origins: ${[...externalRequests].join(', ')}`);
   await page.close();
+}
+
+// Chromium performs the exhaustive visual-layout sweep over every public URL.
+// Other engines keep the representative compatibility checks above to control CI cost.
+if (browserName === 'chromium') {
+  for (const viewport of [
+    { name: 'mobile-360', width: 360, height: 800 },
+    { name: 'desktop-1280', width: 1280, height: 900 },
+  ]) {
+    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'ko-KR' });
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(String(error)));
+    for (const url of urls) {
+      pageErrors.length = 0;
+      const response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+      assert(response?.ok(), `${viewport.name} ${url}: navigation failed`);
+      await collectLayoutProblems(page, `${viewport.name} ${new URL(url).pathname}`);
+      assert(pageErrors.length === 0, `${viewport.name} ${url}: page errors: ${pageErrors.join(' | ')}`);
+    }
+    await context.close();
+  }
 }
 
 await browser.close();
@@ -95,4 +146,4 @@ if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log(`DEVICE CHECKUP production QA passed on ${browserName}: ${urls.length} sitemap URLs reachable; representative ko/en/ja/zh-CN/ru mobile surfaces and tool pages had one language selector, no page errors, no horizontal overflow on home surfaces, and no unexpected external network origins.`);
+console.log(`DEVICE CHECKUP production QA passed on ${browserName}: ${urls.length} sitemap URLs reachable; representative multi-engine checks passed${browserName === 'chromium' ? '; all 117 URLs passed 360px mobile and 1280px desktop layout/clipping/overflow sweep' : ''}.`);
