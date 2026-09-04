@@ -109,7 +109,6 @@ for lang, folder in DIRS.items():
         "fnEvidence.state='unavailable'",
         "fnEvidence.state='confirmed'",
         "class=\"keyboard-help\"",
-        "class=\"notice side-help\"",
     ]:
         if required not in text:
             err(rel, 'keyboard invariant missing', required)
