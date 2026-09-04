@@ -73,7 +73,7 @@ jobs:
       - name: Validate localized artifact
         run: python tools/validate_dist.py
 
-      - name: Validate language UX coverage
+      - name: Validate language and UI coverage
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -82,14 +82,15 @@ jobs:
           for p in pages:
               t=p.read_text(encoding='utf-8')
               assert 'id="languagePicker"' in t, p
-              assert 'language-ux-v1' in t, p
+              assert 'language-ux-v2' in t, p
+              assert 'ui-polish-v1' in t, p
               assert 'data-locale=' in t, p
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX present on all 117 pages; Korean keyboard prose localized; build revision={revision}')
+          print(f'Language UX and shared UI polish present on all 117 pages; Korean keyboard prose localized; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
