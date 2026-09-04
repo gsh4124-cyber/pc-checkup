@@ -111,16 +111,16 @@ def inject_runtime_helper(text: str) -> str:
   const lang=(document.documentElement.lang||'en').toLowerCase();
   const ko=lang.startsWith('ko');
   const t={
-    idle:ko?'Fn 상태: Fn 확인을 켠 뒤 같은 물리키를 Fn 없이 1번, Fn과 함께 1번 눌러 비교하세요.':'Fn status: turn on Fn check, then compare the same physical key once without Fn and once with Fn.',
-    armed:ko?'Fn 확인 ON: 먼저 대상 키를 Fn 없이 한 번 누른 뒤, 같은 물리키를 Fn과 함께 한 번 누르세요.':'Fn check ON: first press a target key once without Fn, then press the same physical key with Fn.',
-    baseline:ko?'기준 입력 저장: ':'Baseline saved: ',
-    next:ko?' · 이제 Fn을 누른 채 같은 물리키를 누르세요.':' · Now hold Fn and press the same physical key.',
-    same:ko?'Fn 비교 완료: Fn 전후 입력이 브라우저에서 동일합니다. 이 조합은 여기서 구분할 수 없습니다.':'Fn comparison complete: the browser reports the same input with and without Fn. This combination cannot be distinguished here.',
-    detected:ko?'Fn 조합 변화 확인: ':'Fn combination output changed: ',
-    print:ko?'Fn 조합 결과 확인: PrintScreen':'Fn combination output detected: PrintScreen',
-    chipIdle:ko?'Fn · 간접 확인':'Fn · indirect',
-    chipOn:ko?'Fn · 확인 중':'Fn · checking',
-    chipOk:ko?'Fn · 조합 확인':'Fn · verified'
+    idle:ko?'Fn \\uc0c1\\ud0dc: Fn \\ud655\\uc778\\uc744 \\ucf20 \\ub4a4 \\uac19\\uc740 \\ubb3c\\ub9ac\\ud0a4\\ub97c Fn \\uc5c6\\uc774 1\\ubc88, Fn\\uacfc \\ud568\\uaed8 1\\ubc88 \\ub20c\\ub7ec \\ube44\\uad50\\ud558\\uc138\\uc694.':'Fn status: turn on Fn check, then compare the same physical key once without Fn and once with Fn.',
+    armed:ko?'Fn \\ud655\\uc778 ON: \\uba3c\\uc800 \\ub300\\uc0c1 \\ud0a4\\ub97c Fn \\uc5c6\\uc774 \\ud55c \\ubc88 \\ub204\\ub978 \\ub4a4, \\uac19\\uc740 \\ubb3c\\ub9ac\\ud0a4\\ub97c Fn\\uacfc \\ud568\\uaed8 \\ud55c \\ubc88 \\ub204\\ub974\\uc138\\uc694.':'Fn check ON: first press a target key once without Fn, then press the same physical key with Fn.',
+    baseline:ko?'\\uae30\\uc900 \\uc785\\ub825 \\uc800\\uc7a5: ':'Baseline saved: ',
+    next:ko?' · \\uc774\\uc81c Fn\\uc744 \\ub204\\ub978 \\ucc44 \\uac19\\uc740 \\ubb3c\\ub9ac\\ud0a4\\ub97c \\ub204\\ub974\\uc138\\uc694.':' · Now hold Fn and press the same physical key.',
+    same:ko?'Fn \\ube44\\uad50 \\uc644\\ub8cc: Fn \\uc804\\ud6c4 \\uc785\\ub825\\uc774 \\ube0c\\ub77c\\uc6b0\\uc800\\uc5d0\\uc11c \\ub3d9\\uc77c\\ud569\\ub2c8\\ub2e4. \\uc774 \\uc870\\ud569\\uc740 \\uc5ec\\uae30\\uc11c \\uad6c\\ubd84\\ud560 \\uc218 \\uc5c6\\uc2b5\\ub2c8\\ub2e4.':'Fn comparison complete: the browser reports the same input with and without Fn. This combination cannot be distinguished here.',
+    detected:ko?'Fn \\uc870\\ud569 \\ubcc0\\ud654 \\ud655\\uc778: ':'Fn combination output changed: ',
+    print:ko?'Fn \\uc870\\ud569 \\uacb0\\uacfc \\ud655\\uc778: PrintScreen':'Fn combination output detected: PrintScreen',
+    chipIdle:ko?'Fn · \\uac04\\uc811 \\ud655\\uc778':'Fn · indirect',
+    chipOn:ko?'Fn · \\ud655\\uc778 \\uc911':'Fn · checking',
+    chipOk:ko?'Fn · \\uc870\\ud569 \\ud655\\uc778':'Fn · verified'
   };
   const families=['Shift','Control','Alt','Meta'];
   const verifiedSides=new Map(families.map(f=>[f,new Set()]));
