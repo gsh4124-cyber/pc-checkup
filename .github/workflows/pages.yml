@@ -84,15 +84,15 @@ jobs:
           for p in pages:
               t=p.read_text(encoding='utf-8')
               assert 'id="languagePicker"' in t, p
-              assert 'language-ux-v4' in t, p
-              assert 'ui-polish-v3' in t, p
+              assert 'language-ux-v5' in t, p
+              assert 'ui-polish-v4' in t, p
               assert 'data-locale=' in t, p
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX, restored DOM structure, and shared UI polish present on all 117 pages; build revision={revision}')
+          print(f'Language UX, restored DOM/JS structure, and responsive UI polish present on all 117 pages; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
