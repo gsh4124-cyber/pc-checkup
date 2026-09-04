@@ -87,23 +87,23 @@ jobs:
           for p in pages:
               t=p.read_text(encoding='utf-8')
               assert 'id="languagePicker"' in t, p
-              assert 'language-ux-v5' in t, p
-              assert 'ui-polish-v4' in t, p
+              assert 'language-ux-v6' in t, p
+              assert 'ui-polish-v5' in t, p
               assert 'data-locale=' in t, p
+              assert '<details class="notice side-help">' not in t, p
           keyboards=[Path('dist/keyboard.html'), *sorted(Path('dist').glob('*/keyboard.html'))]
           assert len(keyboards)==13, len(keyboards)
           for p in keyboards:
               t=p.read_text(encoding='utf-8')
               assert '<details class="keyboard-help">' in t, p
-              assert '<details class="notice side-help">' in t, p
-              assert 'keyboard-help-final-v1' in t, p
+              assert '<aside class="side">' in t and '<div class="notice"><strong>' in t, p
               assert not re.search(r'<div class="keyboard-actions">[\s\S]*?<button id="fnArm"[\s\S]*?</div>\s*<p class="keyboard-note">', t), p
           ko=Path('dist/keyboard.html').read_text(encoding='utf-8')
           for phrase in ['Start keyboard test','Exit keyboard test','Fn check','Fn status:','Common ANSI-style layout.']:
               assert phrase not in ko, phrase
           revision=Path('dist/build-revision.txt').read_text(encoding='utf-8').strip()
           assert revision, 'build revision missing'
-          print(f'Language UX, restored DOM/JS structure, responsive UI polish, and collapsed keyboard help present on all required pages; build revision={revision}')
+          print(f'Language UX, responsive readability, and visible sidebar help consistency present on all 117 pages; build revision={revision}')
           PY
 
       - name: Upload Pages artifact
