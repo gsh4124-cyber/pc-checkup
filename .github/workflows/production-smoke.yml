@@ -54,7 +54,9 @@ jobs:
       - name: Run Chromium production QA
         env:
           DEVICE_BROWSER: chromium
-        run: node tools/production-smoke.mjs
+        run: |
+          node tools/production-smoke.mjs
+          node tools/header-layout-smoke.mjs
 
   cross-browser-production:
     name: Production QA · ${{ matrix.browser }}
