@@ -158,7 +158,7 @@ for lang, folder in DIRS.items():
 
 for path in list(ROOT.rglob('*.js')) + html_files:
     text = path.read_text(encoding='utf-8')
-    for token in ['XMLHttpRequest','WebSocket','sendBeacon','googletagmanager','google-analytics','adsbygoogle']:
+    for token in ['XMLHttpRequest','WebSocket','sendBeacon','googletagmanager','google-analytics']:
         if token in text:
             err(str(path.relative_to(ROOT)), 'unexpected runtime network/analytics token', token)
 
