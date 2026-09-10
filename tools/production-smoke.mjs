@@ -9,6 +9,18 @@ const browserTypes = { chromium, firefox, webkit };
 const browserType = browserTypes[browserName];
 if (!browserType) throw new Error(`Unsupported DEVICE_BROWSER: ${browserName}`);
 
+// Production intentionally loads Google AdSense. Keep the external-origin guard,
+// but allow only the origins currently required by the approved ad integration.
+const allowedExternalOrigins = new Set([
+  'https://pagead2.googlesyndication.com',
+  'https://googleads.g.doubleclick.net',
+  'https://ep1.adtrafficquality.google',
+  'https://ep2.adtrafficquality.google',
+  'https://www.google.com',
+]);
+const unexpectedExternalOrigins = externalRequests =>
+  [...externalRequests].filter(origin => !allowedExternalOrigins.has(origin));
+
 const sitemapResponse = await fetch(`${base}/sitemap.xml`);
 assert(sitemapResponse.ok, `sitemap HTTP ${sitemapResponse.status}`);
 const sitemap = await sitemapResponse.text();
@@ -92,7 +104,8 @@ for (const item of representative) {
   assert((await page.locator('a[href$="mobile.html"]').count()) > 0, `${item.path}: mobile checkup entry missing`);
   await collectLayoutProblems(page, `${item.path} mobile`);
   assert(pageErrors.length === 0, `${item.path}: page errors: ${pageErrors.join(' | ')}`);
-  assert(externalRequests.size === 0, `${item.path}: unexpected external network origins: ${[...externalRequests].join(', ')}`);
+  const unexpectedOrigins = unexpectedExternalOrigins(externalRequests);
+  assert(unexpectedOrigins.length === 0, `${item.path}: unexpected external network origins: ${unexpectedOrigins.join(', ')}`);
   await context.close();
 }
 
@@ -113,7 +126,8 @@ for (const path of ['/en/keyboard.html', '/en/mobile.html', '/zh-CN/keyboard.htm
   assert((await page.locator('header select[aria-label]').count()) === 1, `${path}: header contains duplicate language selects`);
   await collectLayoutProblems(page, `${path} mobile`);
   assert(pageErrors.length === 0, `${path}: page errors: ${pageErrors.join(' | ')}`);
-  assert(externalRequests.size === 0, `${path}: unexpected external network origins: ${[...externalRequests].join(', ')}`);
+  const unexpectedOrigins = unexpectedExternalOrigins(externalRequests);
+  assert(unexpectedOrigins.length === 0, `${path}: unexpected external network origins: ${unexpectedOrigins.join(', ')}`);
   await page.close();
 }
 
