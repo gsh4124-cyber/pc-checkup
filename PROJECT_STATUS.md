@@ -1,6 +1,6 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
-- 마지막 갱신: 2026-09-07
+- 마지막 갱신: 2026-09-10
 - 저장소 역할: DEVICE CHECKUP 실제 코드·배포·기술상태 원본
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 현재 운영 주소: `https://pc-checkup.pages.dev/`
@@ -8,9 +8,9 @@
 
 ## 현재 단계
 
-**PUBLIC PRODUCTION / GLOBAL 13-LANGUAGE DEPLOYED / ARTIFACT QA PASS WITH FIXES / RED TEAM PASS WITH FIXES / EXACT-REVISION PRODUCTION BROWSER QA PASS / PHYSICAL DEVICE QA PENDING / SEARCH ACCOUNT STATE PARTIAL-UNVERIFIED**
+**PUBLIC PRODUCTION / GLOBAL 13-LANGUAGE DEPLOYED / ADSENSE_REVIEW_SUBMITTED / HUMAN LAPTOP QA APPROVED / CURRENT-REVISION PRODUCTION BROWSER QA PASS / SEARCH ACCOUNT STATE PARTIAL-UNVERIFIED**
 
-> 구현 완료 ≠ 정적 QA PASS ≠ 공개 배포 ≠ 현재 revision Production QA PASS ≠ 실제 하드웨어 사용 PASS ≠ 검색 색인·유입 ≠ 시장 성공
+> 구현 완료 ≠ 정적 QA PASS ≠ 공개 배포 ≠ 현재 revision Production QA PASS ≠ 검색 색인·유입 ≠ 시장 성공
 
 ## 제품 범위
 
@@ -82,14 +82,20 @@ PC:
 - 언어 선택기 중복·회귀
 - 현재 공개 revision과 검사 revision 일치
 
-Production Browser Smoke는 공개 revision을 확인한 뒤 실제 production을 검사한다.
-- Chromium
-- Firefox
-- WebKit
+Production Browser Smoke는 공개 revision을 확인한 뒤 Chromium / Firefox / WebKit으로 실제 production을 검사한다.
 
-2026-09-07 최신 주기 Production Browser Smoke도 **SUCCESS**로 확인됐다.
+### 2026-09-10 AdSense 연동 후 QA 회귀와 복구
 
-**Playwright WebKit PASS를 실제 iPhone Safari PASS라고 부르지 않는다.** 자동 엔진 호환성과 실제 물리기기·브라우저 권한·하드웨어 상호작용은 별도 Gate다.
+- AdSense 코드 반영 뒤 scheduled Production Browser Smoke가 승인된 Google AdSense 네트워크 요청을 `unexpected external origin`으로 판정해 실패했다.
+- 페이지 런타임·레이아웃 회귀가 확인된 것이 아니라 **외부-origin 보안 가드의 허용목록이 새 승인 연동을 반영하지 못한 QA 회귀**였다.
+- repair commit `1314a2edff99daad36222911125ec70b4c7527ba`에서 보안 가드는 유지하고 실제 관찰된 Google AdSense 필수 origin만 최소 허용했다.
+- 같은 SHA의 `Security Guardrails` run #7: **SUCCESS**.
+- 같은 SHA의 배포 workflow run #171: **SUCCESS**.
+- 같은 SHA의 `Production Browser Smoke` run #92: **SUCCESS**.
+
+따라서 이 기술회귀는 **RECOVERED / CURRENT-REVISION PRODUCTION BROWSER QA PASS**로 닫는다.
+
+자동 브라우저 검증과 황제의 인간 체감 검수는 별개 증거로 관리한다. 자동검사 성공을 특정 모바일 실기기 검수로 과장하지 않지만, 이미 완료된 황제 인간 QA를 반복 Gate로 되살리지 않는다.
 
 ## 키보드 / Fn 재발방지 핵심
 
@@ -105,61 +111,44 @@ Production Browser Smoke는 공개 revision을 확인한 뒤 실제 production�
 
 상세 과거 감사는 저장소 `QA_AUDIT_2026-09-03.md`와 Git 이력을 따른다.
 
-## 광고 준비
+## 인간 체감 QA — 완료 상태
 
-실제 광고 provider는 아직 연결하지 않았다.
+황제가 **실제 노트북에서 DEVICE CHECKUP을 직접 점검하고 승인한 뒤 공개**했다. 이 검수로 현재 제품의 인간 체감 QA는 완료된 것으로 고정한다.
 
-예약 슬롯:
-- 랜딩 `index.html`
-- PC 전체점검 `checkup.html`
-- 모바일 전체점검 `mobile.html`
+- PC·Android·iPhone을 별도 반복 인간 QA Gate로 다시 요구하지 않는다.
+- 과거의 실물기기 QA 대기 목록은 현재 운영 Gate가 아니다.
+- 이후 제품 경험을 실질적으로 바꾸는 큰 UI·기능 변경이 생겨 새 인간 판단이 필요한 경우에만 새로운 황제 QA Gate를 연다.
+- 자동 Production QA·CI 실패는 인간 QA와 분리된 기술운영 문제로 정/자동화가 먼저 복구한다.
 
-개별 검사 페이지와 fullscreen 검사 중에는 실제 광고를 넣지 않는다.
+## AdSense 실행 상태 — 2026-09-10
 
-현재 상태:
-`ADS_PREPARED / ADS_PROVIDER_NOT_CONNECTED`
+`ADSENSE_REVIEW_SUBMITTED`
+
+- AdSense 사이트 추가 완료
+- 공식 AdSense 코드 반영 완료
+- `ads.txt` 반영 완료
+- Production 소유확인 통과
+- 검토 요청 제출 완료
+- 자동 광고는 인페이지 중심으로 사용
+- 앵커·사이드레일·모바일 전면광고 비활성화
+- 개별 검사 페이지와 fullscreen 검사 화면에는 광고를 두지 않는 원칙 유지
+- AdSense UI의 `ads.txt` 재탐색은 아직 대기 중
+
+승인 완료나 광고수익 발생으로 승격하지 않는다.
 
 ## 검색 유통 상태
 
-제품 코드 측면:
-- 117 URL sitemap 구조
-- robots.txt
-- Cloudflare production origin
-- 검색 메타데이터
-은 준비돼 있다.
+제품 코드 측면의 117 URL sitemap 구조, robots.txt, Cloudflare production origin, 검색 메타데이터는 준비돼 있다.
 
-다만 Google Search Console / Naver Search Advisor / Bing Webmaster Tools / Daum의 **최종 계정 화면 완료 상태는 현재 저장된 증거만으로 확정하지 않는다.**
+Google Search Console / Naver Search Advisor / Bing Webmaster Tools / Daum의 최종 계정 화면 완료 상태는 저장된 외부 증거가 충분하지 않은 항목을 임의로 완료 처리하지 않는다.
 
-검색엔진 등록의 중앙 Canonical:
+검색엔진 등록 중앙 Canonical:
 `황제 Vault 직장/바이브코딩/페이지형/검색엔진_등록_상태.md`
 
 현재 판정:
 `SEARCH_ENGINE_FINAL_ACCOUNT_STATE_UNVERIFIED`
 
 등록 ≠ sitemap 제출 ≠ 크롤링 ≠ 색인 ≠ 노출 ≠ 실제 유입.
-
-Baidu / Yandex / 중국 본토 안정적 배포 등은 시장 우선순위·자체도메인·소유확인 조건에 따라 별도 검토한다.
-
-## 실제 물리·현실 QA
-
-자동 QA와 실제 기기 PASS를 구분한다.
-
-남은 고위험 확인:
-- 다른 PC에서 좌/우 Shift·Ctrl·Alt·Win 실제 분리
-- `assisted` 판정이 필요한 키보드 유형 추가 확인
-- fullscreen에서 브라우저/OS 간섭
-- Fn 조합을 여러 노트북·소형 키보드에서 재확인
-- F1~F12 / Esc / 방향키 / Home-End 계열 간섭
-- focus loss 후 stuck key 없음
-- 마우스 실제 1클릭=1카운트
-- 스피커 좌/우 청취
-- 마이크 실제 입력
-- 웹캠 실제 영상·장치선택
-- 모니터 실제 시각검사
-- Android 전체 흐름
-- 실제 iPhone Safari
-- 실제 Chrome / Edge / Firefox / Safari 권한·하드웨어 상호작용
-- 현지어 자연스러움
 
 ## 현재 판정
 
@@ -168,24 +157,18 @@ Baidu / Yandex / 중국 본토 안정적 배포 등은 시장 우선순위·자�
 - Cloudflare production 배포: PASS
 - 정적/Artifact QA: **PASS WITH FIXES**
 - Red Team: **PASS WITH FIXES**
-- exact-revision Production Browser QA: **PASS**
-- Chromium / Firefox / WebKit 자동검사: **PASS**
-- 키보드/Fn artifact invariant: **PASS**
-- 광고 슬롯 준비: PASS / 실광고 미연결
-- 실제 PC 물리 QA: PARTIAL
-- 실제 모바일·브라우저·하드웨어 QA: PENDING
+- current-revision Production Browser QA: **PASS** (`1314a2ed...`, run #92)
+- Security Guardrails: **PASS** (`1314a2ed...`, run #7)
+- 인간 체감 QA: **APPROVED — 황제 노트북 검수 완료 / 반복 기기 Gate 없음**
+- AdSense: **REVIEW SUBMITTED / ads.txt 재탐색 대기**
 - 검색엔진 최종 계정 등록상태: UNVERIFIED
 - 실제 색인·유입·시장성: UNVERIFIED
 
 ## 다음 Gate
 
-1. 인증된 브라우저에서 Google/Naver/Bing/Daum 실제 계정 상태 확인 → 누락된 등록 단계만 수행 → Vault 검색등록 Canonical 즉시 갱신
-2. 실제 PC·Android·iPhone 물리기기/브라우저 상호작용 QA
-3. 검색 색인·노출·실제 유입 관찰
-4. 제품 가치·유입 신호를 본 뒤 광고/AdSense Gate를 별도로 연다
+1. AdSense 심사 결과와 `ads.txt` 재탐색 상태 관찰
+2. 검색 색인·노출·실제 유입 관찰 및 저장된 외부 계정 증거가 필요한 항목만 재확인
+3. Production/CI 자동관제 지속
+4. 큰 UI·기능 변경으로 새 인간 판단이 실제 필요할 때만 황제 QA Gate 재개방
 
-> **현재 제품을 다시 만드는 단계가 아니라, 공개 제품의 현실 사용·검색 유통·수익화 가능성을 검증하는 단계다.**
-
-## AdSense 실행 상태 — 2026-09-10
-
-`ADSENSE_REVIEW_SUBMITTED` — AdSense 사이트 추가, 공식 코드와 ads.txt 반영, Production 소유확인 통과, 검토 요청 제출. 자동 광고는 인페이지 중심으로 사용하며 앵커·사이드레일·모바일 전면광고는 비활성화. 개별 검사/fullscreen 화면 광고 금지 원칙 유지. ads.txt UI 재탐색 대기 중.
+> **현재 제품은 다시 검수하라고 황제에게 되돌리는 단계가 아니라, 공개 제품의 자동운영·검색 유통·수익화 결과를 관찰하는 단계다.**
