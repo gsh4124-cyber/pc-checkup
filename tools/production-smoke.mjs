@@ -20,6 +20,11 @@ const allowedExternalOrigins = new Set([
 ]);
 const unexpectedExternalOrigins = externalRequests =>
   [...externalRequests].filter(origin => !allowedExternalOrigins.has(origin));
+const capturePageError = (pageErrors, error) => {
+  const message = String(error);
+  const stack = typeof error?.stack === 'string' ? error.stack : '';
+  pageErrors.push(stack && !stack.startsWith(message) ? `${message}\n${stack}` : (stack || message));
+};
 
 const sitemapResponse = await fetch(`${base}/sitemap.xml`);
 assert(sitemapResponse.ok, `sitemap HTTP ${sitemapResponse.status}`);
@@ -86,7 +91,7 @@ for (const item of representative) {
   const page = await context.newPage();
   const pageErrors = [];
   const externalRequests = new Set();
-  page.on('pageerror', error => pageErrors.push(String(error)));
+  page.on('pageerror', error => capturePageError(pageErrors, error));
   page.on('request', request => {
     const url = new URL(request.url());
     if ((url.protocol === 'http:' || url.protocol === 'https:') && url.origin !== base) externalRequests.add(url.origin);
@@ -113,7 +118,7 @@ for (const path of ['/en/keyboard.html', '/en/mobile.html', '/zh-CN/keyboard.htm
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const pageErrors = [];
   const externalRequests = new Set();
-  page.on('pageerror', error => pageErrors.push(String(error)));
+  page.on('pageerror', error => capturePageError(pageErrors, error));
   page.on('request', request => {
     const url = new URL(request.url());
     if ((url.protocol === 'http:' || url.protocol === 'https:') && url.origin !== base) externalRequests.add(url.origin);
@@ -139,7 +144,7 @@ if (browserName === 'chromium') {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'ko-KR' });
     const page = await context.newPage();
     const pageErrors = [];
-    page.on('pageerror', error => pageErrors.push(String(error)));
+    page.on('pageerror', error => capturePageError(pageErrors, error));
     for (const url of urls) {
       pageErrors.length = 0;
       const response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
