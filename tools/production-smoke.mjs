@@ -20,10 +20,28 @@ const allowedExternalOrigins = new Set([
 ]);
 const unexpectedExternalOrigins = externalRequests =>
   [...externalRequests].filter(origin => !allowedExternalOrigins.has(origin));
+
+// Chromium production QA has repeatedly observed one exact AdSense RUM exception:
+// `Uncaught Error: int64`, with every captured frame inside pagead2.../rum.js.
+// Treat only that exact source-bound signature as third-party noise. Unknown errors,
+// message-only matches and product-origin errors remain fail-closed.
+const isVerifiedAdSenseRumPageError = error => {
+  const stack = typeof error?.stack === 'string' ? error.stack : '';
+  const firstLine = (stack || String(error)).split('\n')[0].trim();
+  const exactMessage = firstLine === 'Error: int64' || firstLine === 'Uncaught Error: int64';
+  const verifiedSource = stack.includes('https://pagead2.googlesyndication.com/') && stack.includes('/rum.js:');
+  const productFrame = stack.includes(`${base}/`);
+  return exactMessage && verifiedSource && !productFrame;
+};
 const capturePageError = (pageErrors, error) => {
   const message = String(error);
   const stack = typeof error?.stack === 'string' ? error.stack : '';
-  pageErrors.push(stack && !stack.startsWith(message) ? `${message}\n${stack}` : (stack || message));
+  const formatted = stack && !stack.startsWith(message) ? `${message}\n${stack}` : (stack || message);
+  if (isVerifiedAdSenseRumPageError(error)) {
+    console.warn(`[third-party pageerror classified: AdSense RUM int64] ${formatted}`);
+    return;
+  }
+  pageErrors.push(formatted);
 };
 
 const sitemapResponse = await fetch(`${base}/sitemap.xml`);
