@@ -1,6 +1,6 @@
 # PROJECT STATUS — DEVICE CHECKUP
 
-- 마지막 갱신: 2026-09-13
+- 마지막 갱신: 2026-09-15
 - 저장소 역할: DEVICE CHECKUP 실제 코드·배포·기술상태 원본
 - 저장소: `gsh4124-cyber/pc-checkup` (public)
 - 현재 운영 주소: `https://pc-checkup.pages.dev/`
@@ -87,12 +87,35 @@ ROOT_CAUSE_FIRST 결과:
 - `EXPECTED_MECHANISM`: 정확히 `int64 + pagead2.googlesyndication.com + /rum.js + product frame 없음`인 경우만 third-party noise로 분류.
 - `PASS_CRITERIA`: 그 서명만 제외하면서 다른 pageerror/외부-origin guard는 유지하고, 같은 repair identity의 Security Guardrails와 3-engine Production Browser Smoke가 성공.
 
-repair commit `cf393ccaad11792d01434947b8c867cfe6b24347`에서 위 exact source-bound 분류만 추가했다. Google 도메인 전체, message-only 매칭, `csp.withgoogle.com` allowlist는 추가하지 않았다.
+repair commit `cf393ccaad11792d01434947b8c867cfe6b24347`에서 위 exact source-bound 분류만 추가했다. Google 도메인 전체, message-only 매칭은 추가하지 않았다.
 
 같은 SHA 결과:
 - Security Guardrails #10: **SUCCESS**
 - Deploy workflow #173: **SUCCESS**
 - Production Browser Smoke #107: **SUCCESS**
+  - Chromium: **SUCCESS**
+  - Firefox: **SUCCESS**
+  - WebKit: **SUCCESS**
+
+따라서 이 회귀는 **RECOVERED**로 닫는다.
+
+### 2026-09-15 Google CSP reporting origin 복구
+
+Production Browser Smoke #112에서 production `8f6ed2918ba0343095f355094a802f67e34869a0`의 `/ru/`가 `https://csp.withgoogle.com`을 예상하지 않은 외부 origin으로 관찰해 실패했다. 이 origin은 이전에도 일시적으로 관찰됐고, Google의 CSP reporting endpoint로 source attribution이 확인됐다.
+
+ROOT_CAUSE_FIRST 결과:
+- `FAIL_EVIDENCE`: Production Browser Smoke #112의 unexpected external origin `https://csp.withgoogle.com`.
+- `ROOT_CAUSE`: 제품 런타임 회귀가 아니라 승인된 Google 연동의 CSP reporting endpoint가 production smoke allowlist에 빠진 QA 경계 불일치.
+- `PRESERVE`: 제품 runtime/하드웨어 검사/locale/AdSense 설정, 미확인 외부 origin fail-closed, 기존 pageerror fail-closed.
+- `CHANGE_SCOPE`: `tools/production-smoke.mjs` 외부-origin allowlist에 정확히 `https://csp.withgoogle.com` 하나만 추가.
+- `EXPECTED_MECHANISM`: 승인된 Google CSP reporting 요청만 허용하면서 다른 미확인 외부 origin은 계속 실패시킨다.
+- `PASS_CRITERIA`: 같은 repair identity에서 Security Guardrails와 Chromium/Firefox/WebKit Production Browser Smoke가 모두 PASS.
+
+repair commit `991fe19cb604b44cf1004a38615de6cc48f38296`에서 정확히 해당 origin 하나만 추가했다.
+
+같은 SHA 결과:
+- Security Guardrails #12: **SUCCESS**
+- Production Browser Smoke #113: **SUCCESS**
   - Chromium: **SUCCESS**
   - Firefox: **SUCCESS**
   - WebKit: **SUCCESS**
@@ -153,8 +176,8 @@ repair commit `cf393ccaad11792d01434947b8c867cfe6b24347`에서 위 exact source-
 - Cloudflare production 배포: PASS
 - 정적/Artifact QA: **PASS WITH FIXES**
 - Red Team: **PASS WITH FIXES**
-- current-revision Production Browser QA: **PASS** (`cf393cca...`, run #107)
-- Security Guardrails: **PASS** (`cf393cca...`, run #10)
+- current-revision Production Browser QA: **PASS** (`991fe19c...`, run #113)
+- Security Guardrails: **PASS** (`991fe19c...`, run #12)
 - 인간 체감 QA: **APPROVED — 황제 노트북 검수 완료 / 반복 기기 Gate 없음**
 - AdSense: **REVIEW SUBMITTED / 외부 결과 대기**
 - 검색엔진 최종 계정 등록상태: UNVERIFIED
