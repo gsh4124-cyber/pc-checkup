@@ -10,13 +10,14 @@ const browserType = browserTypes[browserName];
 if (!browserType) throw new Error(`Unsupported DEVICE_BROWSER: ${browserName}`);
 
 // Production intentionally loads Google AdSense. Keep the external-origin guard,
-// but allow only the origins currently required by the approved ad integration.
+// but allow only the origins currently required by the approved Google integration.
 const allowedExternalOrigins = new Set([
   'https://pagead2.googlesyndication.com',
   'https://googleads.g.doubleclick.net',
   'https://ep1.adtrafficquality.google',
   'https://ep2.adtrafficquality.google',
   'https://www.google.com',
+  'https://csp.withgoogle.com',
 ]);
 const unexpectedExternalOrigins = externalRequests =>
   [...externalRequests].filter(origin => !allowedExternalOrigins.has(origin));
