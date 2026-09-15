@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'refundproof/index.html'
       - '.github/workflows/refundproof-groundtruth.yml'
   workflow_dispatch:
 
@@ -19,15 +20,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Wait for public RefundProof
+      - name: Wait for hardened public RefundProof
         run: |
           set -euo pipefail
           url='https://gsh4124-cyber.github.io/pc-checkup/refundproof/'
-          for i in {1..30}; do
+          for i in {1..40}; do
             body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
-            if printf '%s' "$body" | grep -q '<h1>RefundProof AI</h1>'; then exit 0; fi
+            if printf '%s' "$body" | grep -q '항목별 출처·표현 Gate'; then exit 0; fi
             sleep 5
           done
+          echo 'Hardened RefundProof build did not become public.'
           exit 1
       - name: Install Playwright Chromium
         run: |
@@ -62,21 +64,16 @@ jobs:
               await page.fill('#booking',c.booking);
               await page.fill('#quote',c.quote);
               await page.fill('#policy',c.policy);
-              await page.fill('#base','0'); await page.fill('#offered','0'); await page.fill('#airPenalty','0'); await page.fill('#otaFee',String(c.expected.ota)); await page.fill('#nonRefund','0');
+              await page.fill('#base','0'); await page.fill('#offered','0'); await page.fill('#airPenalty','0'); await page.fill('#otaFee','0'); await page.fill('#nonRefund','0');
               await page.click('#extract');
               await page.waitForFunction(()=>document.querySelector('#aiStatus')?.textContent.includes('AI 추출 완료'),null,{timeout:120000});
-              const vals={
-                base:Number(await page.inputValue('#base')),
-                offered:Number(await page.inputValue('#offered')),
-                air:Number(await page.inputValue('#airPenalty')),
-                ota:Number(await page.inputValue('#otaFee'))
-              };
+              const vals={base:Number(await page.inputValue('#base')),offered:Number(await page.inputValue('#offered')),air:Number(await page.inputValue('#airPenalty')),ota:Number(await page.inputValue('#otaFee'))};
               assert(vals.base===c.expected.base,`${c.name}: base ${vals.base}`);
               assert(vals.offered===c.expected.offered,`${c.name}: offered ${vals.offered}`);
               assert(vals.air===c.expected.air,`${c.name}: air penalty ${vals.air}`);
               assert(vals.ota===c.expected.ota,`${c.name}: ota ${vals.ota}`);
-              const ev1=await page.textContent('#baseEv'), ev2=await page.textContent('#airPenaltyEv');
-              assert(!ev1.includes('수동 초기값') && !ev2.includes('수동 초기값'),`${c.name}: AI evidence missing`);
+              const ev1=await page.textContent('#baseEv'),ev2=await page.textContent('#airPenaltyEv');
+              assert(ev1.includes('AI 근거')&&ev2.includes('AI 근거'),`${c.name}: AI evidence missing`);
               await page.click('#audit');
               assert((await page.textContent('#status')).trim()==='MATCH',`${c.name}: not MATCH`);
               assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')===String(c.expected.result),`${c.name}: expected refund mismatch`);
