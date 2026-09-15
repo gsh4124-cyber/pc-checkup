@@ -20,16 +20,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Wait for hardened public RefundProof
+      - name: Wait for monetary-parser public build
         run: |
           set -euo pipefail
           url='https://gsh4124-cyber.github.io/pc-checkup/refundproof/'
           for i in {1..40}; do
             body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
-            if printf '%s' "$body" | grep -q '항목별 출처·표현 Gate'; then exit 0; fi
+            if printf '%s' "$body" | grep -q '날짜 숫자와 금액도 분리합니다'; then exit 0; fi
             sleep 5
           done
-          echo 'Hardened RefundProof build did not become public.'
+          echo 'RefundProof monetary-parser build did not become public.'
           exit 1
       - name: Install Playwright Chromium
         run: |
