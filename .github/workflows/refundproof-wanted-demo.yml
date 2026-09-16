@@ -14,37 +14,40 @@ permissions:
 
 jobs:
   wanted-demo:
-    name: Seller whitelist and fare-rule safety gates
+    name: Seller whitelist, fare-rule safety, streamlined UI
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Wait for public Wanted demo V3
+      - name: Wait for public Wanted demo V5
         run: |
           set -euo pipefail
           url='https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html'
           for i in {1..60}; do
             body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
-            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V3' && printf '%s' "$body" | grep -q '마이리얼트립'; then exit 0; fi
+            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V5' && printf '%s' "$body" | grep -q '왜 이런 금액인가요'; then exit 0; fi
             sleep 5
           done
-          echo 'Wanted demo V3 did not become public.'
+          echo 'Wanted demo V5 did not become public.'
           exit 1
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Verify seller and fare-rule gates
+      - name: Verify calculation gates and customer-first hierarchy
         run: |
           node - <<'JS'
           const { chromium } = require('playwright');
           const assert=(c,m)=>{if(!c)throw new Error(m)};
           (async()=>{
             const browser=await chromium.launch({headless:true});
-            const page=await browser.newPage();
+            const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.goto('https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html',{waitUntil:'networkidle',timeout:60000});
+
+            assert(await page.locator('#details.hidden').count()===1,'details hidden initially');
+            assert((await page.textContent('#detailsToggle')).includes('왜 이런 금액인가요'),'details CTA');
 
             // 1) Verified Jeju Air direct purchase.
             await page.click('#demo');
@@ -52,16 +55,18 @@ jobs:
             assert(Number(await page.inputValue('#airPenalty'))===60000,'Jeju penalty');
             assert(Number(await page.inputValue('#otaFee'))===0,'direct seller fee');
             assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='575000','Jeju expected');
-            console.log('PASS direct airline case');
+            assert((await page.textContent('#shown')).replace(/[^0-9]/g,'')==='548000','seller shown');
+            assert((await page.textContent('#delta')).replace(/[^0-9]/g,'')==='27000','gap summary');
+            console.log('PASS direct airline case + conclusion-first UI');
 
-            // 2) Unknown seller must stop even when arbitrary fee text is supplied.
+            // 2) Unknown seller must stop.
             await page.evaluate(()=>{
               document.querySelector('#booking').value=document.querySelector('#booking').value.replace('구매처 제주항공','구매처 임의여행사');
               document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 558,000원\n판매처 수수료 17,000원';
             });
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','unknown seller stop');
-            assert((await page.textContent('#message')).includes('자동 확정 가능한 판매처 수수료'),'unknown seller policy message');
+            assert((await page.textContent('#message')).includes('판매처 수수료 확인 불가'),'unknown seller policy message');
             assert((await page.textContent('#expected')).trim()==='-','unknown seller no amount');
             console.log('PASS unknown seller remains unavailable');
 
@@ -110,7 +115,7 @@ jobs:
             assert((await page.textContent('#expected')).trim()==='-','basis mismatch no amount');
             console.log('PASS basis mismatch stop');
 
-            // 8) Multiple penalty values in one rule must stop instead of taking the first.
+            // 8) Multiple penalty values must stop.
             await page.evaluate(()=>{document.querySelector('#fareRule').value='Fare Basis VKOR123\n환불 위약금 90,000원\n환불 위약금 120,000원';});
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','multiple penalties stop');
