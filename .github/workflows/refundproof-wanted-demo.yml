@@ -6,6 +6,7 @@ on:
     paths:
       - 'refundproof/wanted-demo.html'
       - '.github/workflows/refundproof-wanted-demo.yml'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
