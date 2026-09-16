@@ -67,3 +67,5 @@ main{max-width:1080px;padding:52px 18px 88px}
           git add refundproof/wanted-demo.html
           git commit -m 'Polish RefundProof submission UI'
           git push
+
+# trigger: visual-polish-2026-09-16
