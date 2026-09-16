@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   wanted-demo:
-    name: Consumer docs → refund result flow
+    name: Verified rule → result / uncertain rule → stop
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -25,9 +25,9 @@ jobs:
         run: |
           set -euo pipefail
           url='https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html'
-          for i in {1..50}; do
+          for i in {1..60}; do
             body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
-            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V1'; then exit 0; fi
+            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V1' && printf '%s' "$body" | grep -q '제주항공 7C1102'; then exit 0; fi
             sleep 5
           done
           echo 'Wanted demo build did not become public.'
@@ -36,7 +36,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Verify consumer docs → refund difference → inquiry draft
+      - name: Verify safe compute and uncertainty gates
         run: |
           node - <<'JS'
           const { chromium } = require('playwright');
@@ -45,6 +45,8 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage();
             await page.goto('https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html',{waitUntil:'networkidle',timeout:60000});
+
+            // 1) Verified Jeju Air STANDARD, Korea origin, whole unused, direct purchase.
             await page.click('#demo');
             await page.waitForFunction(()=>document.querySelector('#status')?.textContent.trim()==='환불금액에 차이가 있어요',null,{timeout:120000});
             const vals={
@@ -55,27 +57,51 @@ jobs:
               non:Number(await page.inputValue('#nonRefund'))
             };
             assert(vals.base===635000,`base ${vals.base}`);
-            assert(vals.offered===458000,`offered ${vals.offered}`);
-            assert(vals.air===90000,`air ${vals.air}`);
-            assert(vals.ota===20000,`ota ${vals.ota}`);
+            assert(vals.offered===548000,`offered ${vals.offered}`);
+            assert(vals.air===60000,`air ${vals.air}`);
+            assert(vals.ota===0,`seller fee ${vals.ota}`);
             assert(vals.non===0,`non ${vals.non}`);
-            assert((await page.textContent('#ctxAirline')).includes('대한항공'),'airline context');
-            assert((await page.textContent('#ctxClass')).trim()==='V','fare class');
+            assert((await page.textContent('#ctxAirline')).includes('제주항공'),'airline context');
+            assert((await page.textContent('#ctxClass')).trim()==='STANDARD','fare');
             assert((await page.textContent('#ctxDays')).includes('10일 전'),'cancel timing');
-            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='525000','expected refund');
-            assert((await page.textContent('#gapAmount')).replace(/[^0-9]/g,'')==='67000','gap amount');
-            assert(await page.locator('#evidenceRows tr').count()===5,'evidence rows');
+            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='575000','expected refund');
+            assert((await page.textContent('#gapAmount')).replace(/[^0-9]/g,'')==='27000','gap amount');
+            assert(await page.locator('#evidenceRows tr').count()===4,'evidence rows');
             const draft=await page.textContent('#draft');
-            assert(draft.includes('525,000원'),'draft expected');
-            assert(draft.includes('458,000원'),'draft offered');
-            assert(draft.includes('67,000원'),'draft gap');
-            assert(draft.includes('추가로 차감된 항목명과 금액'),'draft ask');
-            console.log('PASS customer refund-difference flow',vals);
-            await page.evaluate(()=>{document.querySelector('#offered').value='525000'});
+            assert(draft.includes('575,000원'),'draft expected');
+            assert(draft.includes('548,000원'),'draft offered');
+            assert(draft.includes('27,000원'),'draft gap');
+            console.log('PASS verified rule → deterministic result',vals);
+
+            // 2) Matching seller quote becomes match.
+            await page.evaluate(()=>{
+              document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 575,000원';
+            });
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='금액이 맞아요','match after corrected offer');
             assert(await page.locator('#pack.hidden').count()===1,'pack hidden on match');
             console.log('PASS corrected offer → match');
+
+            // 3) OTA purchase must stop instead of guessing seller fee.
+            await page.evaluate(()=>{
+              document.querySelector('#booking').value=document.querySelector('#booking').value.replace('구매처 제주항공','구매처 SomeOTA');
+              document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 548,000원';
+            });
+            await page.click('#audit');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','OTA must stop');
+            assert((await page.textContent('#message')).includes('판매처 수수료'),'OTA missing fee message');
+            assert((await page.textContent('#expected')).trim()==='-','no expected amount on uncertainty');
+            console.log('PASS unknown OTA fee → stop');
+
+            // 4) Partial use must stop.
+            await page.evaluate(()=>{
+              document.querySelector('#booking').value=document.querySelector('#booking').value.replace('구매처 SomeOTA','구매처 제주항공').replace('전체 미사용','부분 사용');
+            });
+            await page.click('#audit');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','partial use must stop');
+            assert((await page.textContent('#expected')).trim()==='-','no expected amount on partial use');
+            console.log('PASS partial use → stop');
+
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
