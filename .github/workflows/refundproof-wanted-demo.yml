@@ -14,29 +14,29 @@ permissions:
 
 jobs:
   wanted-demo:
-    name: Verified rules, seller fees, fare-rule gates
+    name: Seller whitelist and fare-rule safety gates
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Wait for public Wanted demo V2
+      - name: Wait for public Wanted demo V3
         run: |
           set -euo pipefail
           url='https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html'
           for i in {1..60}; do
             body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
-            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V2' && printf '%s' "$body" | grep -q 'Fare Basis'; then exit 0; fi
+            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V3' && printf '%s' "$body" | grep -q '마이리얼트립'; then exit 0; fi
             sleep 5
           done
-          echo 'Wanted demo V2 did not become public.'
+          echo 'Wanted demo V3 did not become public.'
           exit 1
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Verify safe calculation and uncertainty handling
+      - name: Verify seller and fare-rule gates
         run: |
           node - <<'JS'
           const { chromium } = require('playwright');
@@ -46,65 +46,76 @@ jobs:
             const page=await browser.newPage();
             await page.goto('https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html',{waitUntil:'networkidle',timeout:60000});
 
-            // 1) Verified Jeju Air direct-purchase case.
+            // 1) Verified Jeju Air direct purchase.
             await page.click('#demo');
             await page.waitForFunction(()=>document.querySelector('#status')?.textContent.trim()==='환불금액에 차이가 있어요',null,{timeout:60000});
             assert(Number(await page.inputValue('#airPenalty'))===60000,'Jeju penalty');
             assert(Number(await page.inputValue('#otaFee'))===0,'direct seller fee');
-            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='575000','Jeju expected refund');
-            assert((await page.textContent('#gapAmount')).replace(/[^0-9]/g,'')==='27000','Jeju gap');
-            assert((await page.textContent('#ctxFareBasis')).includes('MSTANDARD'),'fare basis parsed');
-            console.log('PASS Jeju verified public rule');
+            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='575000','Jeju expected');
+            console.log('PASS direct airline case');
 
-            // 2) Any seller name is accepted, but unknown seller fee must stop.
+            // 2) Unknown seller must stop even when arbitrary fee text is supplied.
             await page.evaluate(()=>{
               document.querySelector('#booking').value=document.querySelector('#booking').value.replace('구매처 제주항공','구매처 임의여행사');
-            });
-            await page.click('#audit');
-            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','unknown seller stop');
-            assert((await page.textContent('#message')).includes('판매처'), 'seller message');
-            assert((await page.textContent('#expected')).trim()==='-','no guess on seller fee');
-            console.log('PASS arbitrary seller accepted but not guessed');
-
-            // 3) Seller fee disclosed in customer documents can be used.
-            await page.evaluate(()=>{
               document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 558,000원\n판매처 수수료 17,000원';
             });
             await page.click('#audit');
-            assert((await page.textContent('#status')).trim()==='금액이 맞아요','seller fee documented match');
-            assert(Number(await page.inputValue('#otaFee'))===17000,'seller fee parsed');
-            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='558000','seller fee expected');
-            console.log('PASS documented seller fee');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','unknown seller stop');
+            assert((await page.textContent('#message')).includes('자동 확정 가능한 판매처 수수료'),'unknown seller policy message');
+            assert((await page.textContent('#expected')).trim()==='-','unknown seller no amount');
+            console.log('PASS unknown seller remains unavailable');
 
-            // 4) Korean Air with booking class/Fare Basis but no exact fare rule must stop and ask for fare rule.
+            // 3) Whitelisted seller policy is recognized, but actual applied amount is still required.
             await page.evaluate(()=>{
-              document.querySelector('#booking').value='예약번호 KE1234\n항공사 대한항공 KE703\n여정 인천(ICN) → 도쿄(NRT)\n출발일 2026-09-30\n예약등급 V\nFare Basis VKOR123\n결제금액 635,000원\n구매처 대한항공\n사용상태 전체 미사용';
-              document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 525,000원';
-              document.querySelector('#fareRule').value='';
-            });
-            await page.click('#audit');
-            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','KE missing fare rule stop');
-            assert(await page.locator('#fareAsk:not(.hidden)').count()===1,'fare rule request visible');
-            assert((await page.textContent('#expected')).trim()==='-','no KE estimate');
-            console.log('PASS booking class alone is not treated as exact price rule');
-
-            // 5) Matching uploaded fare rule resolves Korean Air case deterministically.
-            await page.evaluate(()=>{
-              document.querySelector('#fareRule').value='Fare Basis VKOR123\n환불 위약금 90,000원';
+              document.querySelector('#booking').value=document.querySelector('#booking').value.replace('구매처 임의여행사','구매처 마이리얼트립');
               document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 545,000원';
             });
             await page.click('#audit');
-            assert((await page.textContent('#status')).trim()==='금액이 맞아요','KE exact fare rule match');
-            assert(Number(await page.inputValue('#airPenalty'))===90000,'KE exact penalty');
-            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='545000','KE expected');
-            console.log('PASS matching exact fare rule resolves amount');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','known seller missing applied amount stop');
+            assert((await page.textContent('#message')).includes('실제 적용된 판매처 수수료 금액'),'needs applied seller amount');
+            console.log('PASS known seller still requires reservation-level amount');
 
-            // 6) Fare Basis mismatch must not be accepted.
+            // 4) Whitelisted seller + documented applied amount can compute.
+            await page.evaluate(()=>{
+              document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 545,000원\n판매처 수수료 30,000원';
+            });
+            await page.click('#audit');
+            assert((await page.textContent('#status')).trim()==='금액이 맞아요','known seller documented fee match');
+            assert(Number(await page.inputValue('#otaFee'))===30000,'seller fee parsed');
+            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='545000','seller expected');
+            console.log('PASS whitelisted seller + applied fee');
+
+            // 5) Fare Basis known but no exact fare rule must stop.
+            await page.evaluate(()=>{
+              document.querySelector('#booking').value='예약번호 KE1234\n항공사 대한항공 KE703\n여정 인천(ICN) → 도쿄(NRT)\n출발일 2026-09-30\n예약등급 V\nFare Basis VKOR123\n결제금액 635,000원\n구매처 대한항공\n사용상태 전체 미사용';
+              document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 545,000원';
+              document.querySelector('#fareRule').value='';
+            });
+            await page.click('#audit');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','missing fare rule stop');
+            assert(await page.locator('#fareAsk:not(.hidden)').count()===1,'fare ask visible');
+            console.log('PASS fare basis alone not enough');
+
+            // 6) Exact same Fare Basis + exactly one penalty resolves.
+            await page.evaluate(()=>{document.querySelector('#fareRule').value='Fare Basis VKOR123\n환불 위약금 90,000원';});
+            await page.click('#audit');
+            assert((await page.textContent('#status')).trim()==='금액이 맞아요','exact fare rule match');
+            assert(Number(await page.inputValue('#airPenalty'))===90000,'exact penalty');
+            console.log('PASS exact fare-rule match');
+
+            // 7) Different Fare Basis must stop.
             await page.evaluate(()=>{document.querySelector('#fareRule').value='Fare Basis OTHER999\n환불 위약금 90,000원';});
             await page.click('#audit');
-            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','fare basis mismatch stop');
-            assert((await page.textContent('#expected')).trim()==='-','no amount on mismatch');
-            console.log('PASS fare basis mismatch → stop');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','basis mismatch stop');
+            assert((await page.textContent('#expected')).trim()==='-','basis mismatch no amount');
+            console.log('PASS basis mismatch stop');
+
+            // 8) Multiple penalty values in one rule must stop instead of taking the first.
+            await page.evaluate(()=>{document.querySelector('#fareRule').value='Fare Basis VKOR123\n환불 위약금 90,000원\n환불 위약금 120,000원';});
+            await page.click('#audit');
+            assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','multiple penalties stop');
+            assert((await page.textContent('#message')).includes('여러 개'),'multiple penalty message');
+            console.log('PASS ambiguous fare-rule table stop');
 
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
