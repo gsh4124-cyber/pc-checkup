@@ -1,5 +1,6 @@
 name: RefundProof Sample Path Once
 
+# trigger sample-path patch
 on:
   push:
     branches: [main]
