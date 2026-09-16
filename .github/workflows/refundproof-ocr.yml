@@ -57,3 +57,4 @@ async function extractPdfText(file){const pdfjs=await import('https://cdn.jsdeli
           git add refundproof/wanted-demo.html
           git commit -m 'Support images and scanned PDFs in RefundProof'
           git push
+# trigger-2026-09-16
