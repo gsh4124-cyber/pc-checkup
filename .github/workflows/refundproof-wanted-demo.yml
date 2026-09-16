@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   wanted-demo:
-    name: Consumer docs → rule match → audit flow
+    name: Consumer docs → refund result flow
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -36,7 +36,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Verify consumer docs → rule match → GAP → evidence pack
+      - name: Verify consumer docs → refund difference → inquiry draft
         run: |
           node - <<'JS'
           const { chromium } = require('playwright');
@@ -46,7 +46,7 @@ jobs:
             const page=await browser.newPage();
             await page.goto('https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html',{waitUntil:'networkidle',timeout:60000});
             await page.click('#demo');
-            await page.waitForFunction(()=>document.querySelector('#status')?.textContent.trim()==='GAP',null,{timeout:120000});
+            await page.waitForFunction(()=>document.querySelector('#status')?.textContent.trim()==='환불금액에 차이가 있어요',null,{timeout:120000});
             const vals={
               base:Number(await page.inputValue('#base')),
               offered:Number(await page.inputValue('#offered')),
@@ -69,13 +69,13 @@ jobs:
             assert(draft.includes('525,000원'),'draft expected');
             assert(draft.includes('458,000원'),'draft offered');
             assert(draft.includes('67,000원'),'draft gap');
-            assert(draft.includes('추가 차감된 항목명·금액·적용 규정'),'draft ask');
-            console.log('PASS consumer docs → rule match → GAP',vals);
+            assert(draft.includes('추가로 차감된 항목명과 금액'),'draft ask');
+            console.log('PASS customer refund-difference flow',vals);
             await page.evaluate(()=>{document.querySelector('#offered').value='525000'});
             await page.click('#audit');
-            assert((await page.textContent('#status')).trim()==='MATCH','match after corrected offer');
-            assert(await page.locator('#pack.hidden').count()===1,'pack hidden on MATCH');
-            console.log('PASS corrected offer → MATCH');
+            assert((await page.textContent('#status')).trim()==='금액이 맞아요','match after corrected offer');
+            assert(await page.locator('#pack.hidden').count()===1,'pack hidden on match');
+            console.log('PASS corrected offer → match');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
