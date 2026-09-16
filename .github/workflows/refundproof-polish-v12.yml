@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tools/polish_refundproof_v12.py'
+      - '.github/workflows/refundproof-polish-v12.yml'
   workflow_dispatch:
 
 permissions:
