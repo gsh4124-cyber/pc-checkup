@@ -19,7 +19,6 @@ jobs:
         run: |
           from pathlib import Path
           import re
-
           p = Path('refundproof/wanted-demo.html')
           s = p.read_text(encoding='utf-8')
           css = r'''<style>
@@ -38,3 +37,4 @@ jobs:
           git add refundproof/wanted-demo.html
           git commit -m 'Polish RefundProof submission UI'
           git push
+# retrigger
