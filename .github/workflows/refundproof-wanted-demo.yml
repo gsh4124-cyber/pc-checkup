@@ -14,29 +14,29 @@ permissions:
 
 jobs:
   wanted-demo:
-    name: Seller whitelist, fare-rule safety, streamlined UI
+    name: Seller whitelist, fare-rule safety, visible checklist
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Wait for public Wanted demo V5
+      - name: Wait for public Wanted demo V6
         run: |
           set -euo pipefail
           url='https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html'
           for i in {1..60}; do
             body=$(curl -fsSL --max-time 20 "$url" 2>/dev/null || true)
-            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V5' && printf '%s' "$body" | grep -q '왜 이런 금액인가요'; then exit 0; fi
+            if printf '%s' "$body" | grep -q 'WANTED_DEMO_V6' && printf '%s' "$body" | grep -q '판매처 수수료'; then exit 0; fi
             sleep 5
           done
-          echo 'Wanted demo V5 did not become public.'
+          echo 'Wanted demo V6 did not become public.'
           exit 1
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Verify calculation gates and customer-first hierarchy
+      - name: Verify calculation gates, checklist, and customer-first hierarchy
         run: |
           node - <<'JS'
           const { chromium } = require('playwright');
@@ -45,9 +45,10 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.goto('https://gsh4124-cyber.github.io/pc-checkup/refundproof/wanted-demo.html',{waitUntil:'networkidle',timeout:60000});
-
             assert(await page.locator('#details.hidden').count()===1,'details hidden initially');
-            assert((await page.textContent('#detailsToggle')).includes('왜 이런 금액인가요'),'details CTA');
+            assert(await page.locator('#checkSeller').count()===1,'seller checklist visible');
+            assert(await page.locator('#checkSellerFee').count()===1,'seller fee checklist visible');
+            assert(await page.locator('#checkFare').count()===1,'fare checklist visible');
 
             // 1) Verified Jeju Air direct purchase.
             await page.click('#demo');
@@ -57,7 +58,11 @@ jobs:
             assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='575000','Jeju expected');
             assert((await page.textContent('#shown')).replace(/[^0-9]/g,'')==='548000','seller shown');
             assert((await page.textContent('#delta')).replace(/[^0-9]/g,'')==='27000','gap summary');
-            console.log('PASS direct airline case + conclusion-first UI');
+            assert((await page.textContent('#checkSeller')).includes('제주항공'),'seller check result');
+            assert((await page.textContent('#checkSellerFee')).includes('별도 수수료 없음'),'direct seller fee check');
+            assert((await page.textContent('#checkFare')).includes('공식 공개 운임표'),'fare rule check');
+            assert((await page.textContent('#checkCalc')).includes('계산 조건 충족'),'calculation check');
+            console.log('PASS direct airline case + visible checklist');
 
             // 2) Unknown seller must stop.
             await page.evaluate(()=>{
@@ -67,6 +72,7 @@ jobs:
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','unknown seller stop');
             assert((await page.textContent('#message')).includes('판매처 수수료 확인 불가'),'unknown seller policy message');
+            assert((await page.textContent('#checkSellerFee')).includes('공개 약관 확인 불가'),'checklist unknown seller');
             assert((await page.textContent('#expected')).trim()==='-','unknown seller no amount');
             console.log('PASS unknown seller remains unavailable');
 
@@ -77,17 +83,15 @@ jobs:
             });
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','known seller missing applied amount stop');
-            assert((await page.textContent('#message')).includes('실제 적용된 판매처 수수료 금액'),'needs applied seller amount');
+            assert((await page.textContent('#checkSellerFee')).includes('실제 적용 금액 확인 필요'),'seller fee checklist needs amount');
             console.log('PASS known seller still requires reservation-level amount');
 
             // 4) Whitelisted seller + documented applied amount can compute.
-            await page.evaluate(()=>{
-              document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 545,000원\n판매처 수수료 30,000원';
-            });
+            await page.evaluate(()=>{document.querySelector('#quote').value='취소 접수일 2026-09-20\n예상 환불액 545,000원\n판매처 수수료 30,000원';});
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='금액이 맞아요','known seller documented fee match');
             assert(Number(await page.inputValue('#otaFee'))===30000,'seller fee parsed');
-            assert((await page.textContent('#expected')).replace(/[^0-9]/g,'')==='545000','seller expected');
+            assert((await page.textContent('#checkSellerFee')).includes('30,000원'),'documented seller fee checklist');
             console.log('PASS whitelisted seller + applied fee');
 
             // 5) Fare Basis known but no exact fare rule must stop.
@@ -99,6 +103,7 @@ jobs:
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','missing fare rule stop');
             assert(await page.locator('#fareAsk:not(.hidden)').count()===1,'fare ask visible');
+            assert((await page.textContent('#checkFare')).includes('운임규칙 추가 확인 필요'),'fare checklist');
             console.log('PASS fare basis alone not enough');
 
             // 6) Exact same Fare Basis + exactly one penalty resolves.
@@ -106,6 +111,7 @@ jobs:
             await page.click('#audit');
             assert((await page.textContent('#status')).trim()==='금액이 맞아요','exact fare rule match');
             assert(Number(await page.inputValue('#airPenalty'))===90000,'exact penalty');
+            assert((await page.textContent('#checkFare')).includes('Fare Basis VKOR123 일치'),'exact fare checklist');
             console.log('PASS exact fare-rule match');
 
             // 7) Different Fare Basis must stop.
@@ -121,7 +127,6 @@ jobs:
             assert((await page.textContent('#status')).trim()==='추가 확인이 필요해요','multiple penalties stop');
             assert((await page.textContent('#message')).includes('여러 개'),'multiple penalty message');
             console.log('PASS ambiguous fare-rule table stop');
-
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
